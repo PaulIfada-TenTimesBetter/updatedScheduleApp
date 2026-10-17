@@ -40,6 +40,9 @@ export async function PATCH(req, { params }) {
   if (body.progressStatus !== undefined) {
     fields.progressStatus = String(body.progressStatus).trim().slice(0, 500);
   }
+  if (body.section !== undefined) {
+    fields.section = String(body.section).trim().slice(0, 120);
+  }
   if (!Object.keys(fields).length) {
     return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
   }

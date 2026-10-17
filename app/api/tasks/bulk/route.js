@@ -29,13 +29,14 @@ export async function POST(req) {
     const priority = raw?.priority === 'critical' ? 'critical' : 'normal';
     const progress = Math.max(0, Math.min(100, Math.round(Number(raw?.progress) || 0)));
     const weight = Math.max(1, Math.min(100, Math.round(Number(raw?.weight) || 1)));
+    const section = String(raw?.section || '').trim().slice(0, 120);
 
     if (!name || !isValidISODate(startDate) || !isValidISODate(endDate) || endDate < startDate) {
       failed.push({ name: name || '(unnamed row)', reason: 'invalid name or dates' });
       continue;
     }
     try {
-      created.push(await insertTask({ userId: user.id, name, startDate, endDate, priority, progress, weight }));
+      created.push(await insertTask({ userId: user.id, name, startDate, endDate, priority, progress, weight, section }));
     } catch (err) {
       console.error('[tasks:bulk]', err);
       failed.push({ name, reason: 'database error' });

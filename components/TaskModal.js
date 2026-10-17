@@ -28,6 +28,7 @@ export default function TaskModal({
   task,
   defaultStart,
   defaultEnd,
+  allSections = [],
   busy,
   error,
   onSave,
@@ -36,15 +37,12 @@ export default function TaskModal({
 }) {
   const editing = Boolean(task);
   const [name, setName] = useState(task?.name || '');
-  const [startDate, setStartDate] = useState(
-    task?.startDate || defaultStart || todayISO()
-  );
+  const [startDate, setStartDate] = useState(task?.startDate || defaultStart || todayISO());
   const [endDate, setEndDate] = useState(
-    task?.endDate ||
-      defaultEnd ||
-      toISO(addDays(parseDate(defaultStart || todayISO()), 3))
+    task?.endDate || defaultEnd || toISO(addDays(parseDate(defaultStart || todayISO()), 3))
   );
   const [priority, setPriority] = useState(task?.priority || 'normal');
+  const [section, setSection] = useState(task?.section || '');
   const [localError, setLocalError] = useState('');
 
   const shownError = localError || error;
@@ -61,7 +59,10 @@ export default function TaskModal({
       setLocalError('End date cannot be before the start date.');
       return;
     }
-    onSave({ name: name.trim(), startDate, endDate, priority }, task?.id);
+    onSave(
+      { name: name.trim(), startDate, endDate, priority, section: section.trim() },
+      task?.id
+    );
   }
 
   const inputCls =
@@ -114,6 +115,30 @@ export default function TaskModal({
               placeholder="e.g. Design homepage"
               className={inputCls}
             />
+          </div>
+
+          <div>
+            <label htmlFor="task-section" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              Section <span className="font-normal text-slate-400">(optional — groups the task)</span>
+            </label>
+            <input
+              id="task-section"
+              type="text"
+              list="task-section-options"
+              maxLength={120}
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              placeholder="e.g. PHASE I — Assessment"
+              className={inputCls}
+            />
+            <datalist id="task-section-options">
+              {allSections.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Type a new name or pick an existing one — shown as a colored band on the schedule.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -194,9 +219,13 @@ export default function TaskModal({
               Bar color preview
             </span>
             <div
-              className="h-[22px] rounded-md ring-1 ring-black/10"
+              className="h-[22px] rounded-md ring-1 ring-black/10 relative overflow-hidden"
               style={{ backgroundColor: preview }}
-            />
+            >
+              <span className="absolute inset-0 flex items-center px-2 text-[11px] font-bold text-white">
+                {name || 'Task name on the bar'}
+              </span>
+            </div>
           </div>
 
           <p className="text-xs text-slate-400">

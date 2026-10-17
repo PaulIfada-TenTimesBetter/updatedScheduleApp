@@ -22,8 +22,8 @@ backed by **Neon Postgres**.
 - 🏗️ **Project title & duration** — type the project title and pick the overall start/end
   dates with the calendar pickers; both are saved to your account and feed the timeline,
   task defaults, and every snapshot.
-- 📸 **Snapshots** — the Scheduler downloads as a **PNG**, the Progress Tracker as a
-  **PDF** — both using the same project title.
+- 📸 **Snapshots** — the Scheduler downloads as a **PNG**; the Progress Tracker as a
+  **PNG or PDF** — both use the same project title and include sections and S/N numbering.
 - 🌗 **Dark / light mode** — toggle in the header; remembered per device.
 - 📝 **Custom row label** — change the "Task" column heading to anything (e.g. "Activity").
 - 📥 **Excel import** — upload an .xlsx/.xls/.csv, pick the sheet and the **column that
@@ -31,6 +31,12 @@ backed by **Neon Postgres**.
   possible, including files with title rows above the table). Import up to 500 tasks at
   once.
 - ⚖️ **Task weight (1–100)** — re-ranks how much each task counts toward overall progress.
+- 🗂️ **Sections** — give each task a section name (e.g. "PHASE I — Mobilization") in the
+  New-task dialog or the tracker's quick-set table; matching names auto-group. The schedule
+  shows a colored amber band per section, and ungrouped tasks sit under "General".
+- 🏷️ **Task names on the bars** — the schedule prints each task's name on its bar.
+- 🔢 **S/N numbering** and an **editable tracker heading** — click the column header in the
+  Progress Tracker to rename it; exports use the same heading.
 - 📊 Stats: total tasks, critical count, weighted overall progress.
 
 ## Project structure

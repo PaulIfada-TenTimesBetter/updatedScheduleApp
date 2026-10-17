@@ -35,6 +35,7 @@ function validateTaskBody(body) {
   const progress = Math.max(0, Math.min(100, Math.round(Number(body.progress) || 0)));
   const weight = Math.max(1, Math.min(100, Math.round(Number(body.weight) || 1)));
   const progressStatus = String(body.progressStatus || '').trim().slice(0, 500);
+  const section = String(body.section || '').trim().slice(0, 120);
 
   if (!name) return { error: 'Task name is required.' };
   if (!isValidISODate(startDate) || !isValidISODate(endDate)) {
@@ -42,5 +43,5 @@ function validateTaskBody(body) {
   }
   if (endDate < startDate) return { error: 'End date cannot be before the start date.' };
 
-  return { value: { name: name.slice(0, 140), startDate, endDate, priority, progress, weight, progressStatus } };
+  return { value: { name: name.slice(0, 140), startDate, endDate, priority, progress, weight, progressStatus, section } };
 }

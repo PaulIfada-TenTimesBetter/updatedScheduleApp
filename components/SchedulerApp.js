@@ -7,7 +7,8 @@ import ImportModal from './ImportModal';
 import TrackerTable from './TrackerTable';
 import Legend from './Legend';
 import { downloadGanttPng } from '@/lib/exportGantt';
-import { downloadTrackerPdf } from '@/lib/exportTracker';
+import { uniqueSectionNames } from '@/lib/sections';
+import { downloadTrackerPng, downloadTrackerPdf } from '@/lib/exportTracker';
 
 function useLocalState(key, initial) {
   const [value, setValue] = useState(initial);
@@ -40,6 +41,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
   const [theme, setTheme] = useLocalState('tt-theme', 'light');
   const [sidebarLabel, setSidebarLabel] = useLocalState('tt-sidebar-label', 'Task');
+  const [trackerLabel, setTrackerLabel] = useLocalState('tt-tracker-label', '');
 
   // Project settings — persisted to the database per user.
   const [chartTitle, setChartTitle] = useState(initialSettings?.projectTitle || '');
@@ -48,6 +50,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
   const settingsTimer = useRef(null);
 
   const displayName = user.name || user.email;
+  const allSections = uniqueSectionNames(tasks);
   const criticalCount = tasks.filter((t) => t.priority === 'critical').length;
   const title = chartTitle.trim() || 'Project Schedule';
 
@@ -210,8 +213,12 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
     });
   }
 
+  function handleTrackerPng() {
+    downloadTrackerPng({ tasks, title, headerLabel: trackerLabel });
+  }
+
   function handleTrackerPdf() {
-    downloadTrackerPdf({ tasks, title });
+    downloadTrackerPdf({ tasks, title, headerLabel: trackerLabel });
   }
 
   const inputCls =
@@ -444,12 +451,20 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
             {/* Tracker toolbar */}
             <div className="flex flex-wrap items-center gap-3">
               <button
+                onClick={handleTrackerPng}
+                disabled={!tasks.length}
+                title="Download the progress tracker as a PNG image"
+                className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs px-4 py-2.5"
+              >
+                ⬇ Snapshot (PNG)
+              </button>
+              <button
                 onClick={handleTrackerPdf}
                 disabled={!tasks.length}
                 title="Download the progress tracker as a PDF"
-                className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs px-4 py-2.5"
+                className="rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-indigo-700 dark:text-indigo-300 font-semibold text-xs px-4 py-2.5"
               >
-                ⬇ Snapshot (PDF)
+                ⬇ PDF
               </button>
               <span className="text-xs text-slate-400">
                 {tasks.length} task{tasks.length === 1 ? '' : 's'} being tracked
@@ -459,6 +474,8 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
             <TrackerTable
               tasks={tasks}
               title={title}
+              headerLabel={trackerLabel}
+              onHeaderLabelChange={setTrackerLabel}
               onPatchTask={handlePatchTask}
               onDeleteTask={handleDelete}
             />
@@ -471,6 +488,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
           task={modal.task}
           defaultStart={projectStart || undefined}
           defaultEnd={projectEnd || undefined}
+          allSections={allSections}
           busy={busy}
           error={modalError}
           onSave={handleSave}
