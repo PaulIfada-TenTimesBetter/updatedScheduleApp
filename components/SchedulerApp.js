@@ -443,7 +443,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
             <p className="text-xs text-slate-400 text-center pb-2">
               Tip: click any bar to edit the task · progress % lives in the 📊 Progress
-              Tracker tab · <span title="Deployed app version">v3.1</span>
+              Tracker tab · <span title="Deployed app version">v3.2</span>
             </p>
           </>
         ) : (

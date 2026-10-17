@@ -5,6 +5,33 @@ import SchedulerApp from '@/components/SchedulerApp';
 
 export const dynamic = 'force-dynamic';
 
+/** Defensive: guarantee tasks carry only string dates (never Date objects). */
+function asISOOrNull(v) {
+  if (!v) return null;
+  if (v instanceof Date) {
+    return Number.isNaN(v.getTime()) ? null : v.toISOString().slice(0, 10);
+  }
+  if (typeof v === 'string') return v.slice(0, 10);
+  return null;
+}
+
+function normalizeSettings(s) {
+  s = s || {};
+  return {
+    projectTitle: typeof s.projectTitle === 'string' ? s.projectTitle : '',
+    projectStart: asISOOrNull(s.projectStart),
+    projectEnd: asISOOrNull(s.projectEnd),
+  };
+}
+
+function normalizeTasks(tasks) {
+  return (tasks || []).map((t) => ({
+    ...t,
+    startDate: asISOOrNull(t.startDate) || '',
+    endDate: asISOOrNull(t.endDate) || '',
+  }));
+}
+
 export default async function DashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect('/login');
@@ -14,13 +41,15 @@ export default async function DashboardPage() {
   let loadError = '';
   try {
     [tasks, settings] = await Promise.all([listTasks(user.id), getSettings(user.id)]);
+    tasks = normalizeTasks(tasks);
+    settings = normalizeSettings(settings);
   } catch (err) {
     // Show the app shell with an error banner instead of crashing.
     console.error('[dashboard] failed to load data:', err);
     loadError =
       'Could not load your data — the database is not responding. Verify DATABASE_URL in Netlify, then visit /api/health to diagnose.';
     try {
-      settings = await getSettings(user.id);
+      settings = normalizeSettings(await getSettings(user.id));
     } catch {}
   }
 
