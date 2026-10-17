@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Official runtime that makes Next.js (pages, SSR, API routes) work on Netlify
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
