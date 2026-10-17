@@ -5,7 +5,7 @@ import GanttChart from './GanttChart';
 import TaskModal from './TaskModal';
 import Legend from './Legend';
 
-export default function SchedulerApp({ user, initialTasks, demoMode }) {
+export default function SchedulerApp({ user, initialTasks, demoMode, loadError }) {
   const [tasks, setTasks] = useState(initialTasks || []);
   const [zoom, setZoom] = useState('day');
   const [modal, setModal] = useState(null); // null | { task: null } | { task }
@@ -106,6 +106,12 @@ export default function SchedulerApp({ user, initialTasks, demoMode }) {
       </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
+        {loadError && (
+          <div className="rounded-xl border border-red-300 bg-red-50 text-red-800 text-sm px-4 py-3">
+            <strong className="font-semibold">Database error.</strong> {loadError}
+          </div>
+        )}
+
         {demoMode && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm px-4 py-3">
             <strong className="font-semibold">Demo mode.</strong> No database is connected, so

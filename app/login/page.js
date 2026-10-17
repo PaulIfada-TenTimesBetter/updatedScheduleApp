@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth';
-import { isDemoMode } from '@/lib/store';
+import { getIsDemoMode } from '@/lib/store';
 import AuthShell from '@/components/AuthShell';
 import LoginForm from '@/components/LoginForm';
 
@@ -11,7 +11,7 @@ export default async function LoginPage() {
   if (user) redirect('/dashboard');
 
   return (
-    <AuthShell demoMode={isDemoMode} title="Welcome back" subtitle="Log in to your schedule">
+    <AuthShell demoMode={getIsDemoMode()} title="Welcome back" subtitle="Log in to your schedule">
       <LoginForm />
     </AuthShell>
   );

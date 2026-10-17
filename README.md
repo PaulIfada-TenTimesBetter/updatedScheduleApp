@@ -72,3 +72,29 @@ Open the site → **Create account** (email + password) → add tasks, flag whic
   valid 7 days. `AUTH_SECRET` must be set in production or sessions reset on each deploy.
 - All task API routes are scoped to the session user — users cannot read or modify
   another account's tasks.
+
+## Troubleshooting
+
+**"Application error: a server-side exception has occurred" (with a Digest number)**
+
+1. Open **`https://YOUR-SITE.netlify.app/api/health`** — this is the built-in doctor:
+   - `{"mode":"production","database":"connected"}` → the DB is fine; the issue is elsewhere.
+   - `{"database":"error","message":"…"}` → read the message; it's almost always the
+     `DATABASE_URL` value (see gotchas below).
+   - `{"mode":"demo", …}` → `DATABASE_URL` is not reaching the app: check it in Netlify
+     **Site configuration → Environment variables**, then redeploy.
+2. Env var gotchas:
+   - No quotation marks around values pasted into Netlify.
+   - The Neon string should include `?sslmode=require` and the correct DB name.
+   - Env vars only apply to **new builds** — after changing them, go to
+     **Deploys → Trigger deploy → Clear cache and deploy site**.
+3. To see the real server error: **Netlify → Logs → Functions** (match the Digest number
+   from the error page to the log entry).
+4. If you changed `AUTH_SECRET`, old logins become invalid — simply log in again.
+
+**Fixed in this version:** the Neon serverless driver v1.x only accepts tagged-template
+queries (`sql`…``) or `sql.query("… WHERE x = $1", [x])`. Earlier code used removed calling
+styles, which crashed the dashboard task list after login. All database calls now use the
+supported forms, and the dashboard shows an error banner instead of crashing if the DB is
+unreachable.
+
