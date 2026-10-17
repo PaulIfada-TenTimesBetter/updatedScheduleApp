@@ -7,7 +7,6 @@ import ImportModal from './ImportModal';
 import TrackerTable from './TrackerTable';
 import Legend from './Legend';
 import { downloadGanttPng } from '@/lib/exportGantt';
-import { uniqueSectionNames } from '@/lib/sections';
 import { downloadTrackerPng, downloadTrackerPdf } from '@/lib/exportTracker';
 
 function useLocalState(key, initial) {
@@ -50,7 +49,6 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
   const settingsTimer = useRef(null);
 
   const displayName = user.name || user.email;
-  const allSections = uniqueSectionNames(tasks);
   const criticalCount = tasks.filter((t) => t.priority === 'critical').length;
   const title = chartTitle.trim() || 'Project Schedule';
 
@@ -443,7 +441,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
             <p className="text-xs text-slate-400 text-center pb-2">
               Tip: click any bar to edit the task · progress % lives in the 📊 Progress
-              Tracker tab · <span title="Deployed app version">v3.5</span>
+              Tracker tab · <span title="Deployed app version">v3.6</span>
             </p>
           </>
         ) : (
@@ -488,7 +486,6 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
           task={modal.task}
           defaultStart={projectStart || undefined}
           defaultEnd={projectEnd || undefined}
-          allSections={allSections}
           busy={busy}
           error={modalError}
           onSave={handleSave}

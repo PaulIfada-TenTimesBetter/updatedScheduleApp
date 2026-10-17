@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import { PRIORITY } from '@/lib/priority';
-import { groupTasksBySection } from '@/lib/sections';
 import QuickSetTable from './QuickSetTable';
 
 const bareInput =
@@ -14,9 +13,9 @@ function clampWeight(v) {
 
 /**
  * Progress Tracker — main table: S/N, task, progress bar (%) and progress
- * status. Grouped by section with amber bands. All inputs are uncontrolled
- * (defaultValue) and commit on blur/Enter, so server responses can never
- * clobber what the user typed.
+ * status, followed by the quick-set editor where Importance and Progress %
+ * are entered. All inputs are uncontrolled (defaultValue) and commit on
+ * blur/Enter, so server responses can never clobber what the user typed.
  */
 export default function TrackerTable({
   tasks,
@@ -29,11 +28,14 @@ export default function TrackerTable({
   const displayHeader = (headerLabel || '').trim() || title || 'Task';
   const [showQuickSet, setShowQuickSet] = useState(true);
 
-  const groups = useMemo(() => groupTasksBySection(tasks), [tasks]);
-
-  const totalWeight = tasks.reduce((s, t) => s + clampWeight(t.weight), 0);
+  const totalWeight = useMemo(
+    () => tasks.reduce((s, t) => s + clampWeight(t.weight), 0),
+    [tasks]
+  );
   const weighted = totalWeight
-    ? Math.round(tasks.reduce((s, t) => s + (t.progress || 0) * clampWeight(t.weight), 0) / totalWeight)
+    ? Math.round(
+        tasks.reduce((s, t) => s + (t.progress || 0) * clampWeight(t.weight), 0) / totalWeight
+      )
     : 0;
 
   return (
@@ -66,9 +68,11 @@ export default function TrackerTable({
             />
           </div>
           <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-            Overall = every task&apos;s progress % counted by its Importance, divided by total
-            Importance. <strong>Priority (Critical / Normal) never changes this
-            calculation</strong> — it only decides the bar color.
+            Every figure you enter counts:{' '}
+            <code className="font-mono text-[10.5px]">
+              overall = Σ (progress × importance) ÷ Σ importance
+            </code>
+            . Priority never changes this number — it only colors the bars.
           </p>
         </div>
       </div>
@@ -105,86 +109,72 @@ export default function TrackerTable({
                   </td>
                 </tr>
               )}
-              {groups.flatMap((group, gi) => [
-                group.section ? (
-                  <tr key={`sec-${gi}`} className="bg-amber-100/80 dark:bg-amber-900/30">
-                    <td colSpan={5} className="px-3 py-2">
-                      <span className="text-[12px] font-extrabold text-amber-800 dark:text-amber-200 uppercase tracking-wide">
-                        {group.section}
-                      </span>
-                      <span className="ml-2 text-[11px] text-amber-700/70 dark:text-amber-300/60">
-                        {group.tasks.length} task{group.tasks.length === 1 ? '' : 's'}
+              {tasks.map((t, i) => {
+                const p = PRIORITY[t.priority] || PRIORITY.normal;
+                const prog = Math.max(0, Math.min(100, t.progress || 0));
+                return (
+                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-3 py-2.5 text-slate-400">{i + 1}</td>
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium text-slate-800 dark:text-slate-100 truncate max-w-[280px]">
+                        {t.name}
+                      </p>
+                      <span
+                        className={`mt-1 inline-block text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${p.badge}`}
+                      >
+                        {p.label}
                       </span>
                     </td>
-                  </tr>
-                ) : null,
-                ...group.tasks.map((t) => {
-                  const p = PRIORITY[t.priority] || PRIORITY.normal;
-                  const prog = Math.max(0, Math.min(100, t.progress || 0));
-                  return (
-                    <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="px-3 py-2.5 text-slate-400">{tasks.indexOf(t) + 1}</td>
-                      <td className="px-3 py-2.5">
-                        <p className="font-medium text-slate-800 dark:text-slate-100 truncate max-w-[280px]">
-                          {t.name}
-                        </p>
-                        <span
-                          className={`mt-1 inline-block text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${p.badge}`}
-                        >
-                          {p.label}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">
+                    <td className="px-3 py-2.5">
+                      <div
+                        className="h-7 rounded-md overflow-hidden ring-1 ring-black/10 relative max-w-[320px]"
+                        style={{ backgroundColor: p.bar }}
+                      >
                         <div
-                          className="h-7 rounded-md overflow-hidden ring-1 ring-black/10 relative max-w-[320px]"
-                          style={{ backgroundColor: p.bar }}
-                        >
-                          <div
-                            className="h-full transition-all"
-                            style={{ width: `${prog}%`, backgroundColor: p.fill }}
-                          />
-                          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-white drop-shadow-sm">
-                            {prog}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <input
-                          type="text"
-                          defaultValue={t.progressStatus || ''}
-                          maxLength={500}
-                          placeholder="e.g. Ongoing / Awaiting mobilization…"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                          }}
-                          onBlur={(e) => {
-                            const v = e.target.value.trim().slice(0, 500);
-                            if ((t.progressStatus || '') !== v) {
-                              onPatchTask(t.id, { progressStatus: v });
-                            }
-                          }}
-                          className={bareInput}
-                          aria-label="Progress status comment"
+                          className="h-full transition-all"
+                          style={{ width: `${prog}%`, backgroundColor: p.fill }}
                         />
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`Delete "${t.name}"? This cannot be undone.`)) {
-                              onDeleteTask(t.id);
-                            }
-                          }}
-                          className="text-slate-300 hover:text-red-500 text-lg leading-none"
-                          title="Delete task"
-                        >
-                          ×
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }),
-              ])}
+                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-white drop-shadow-sm">
+                          {prog}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <input
+                        type="text"
+                        defaultValue={t.progressStatus || ''}
+                        maxLength={500}
+                        placeholder="e.g. Ongoing / Awaiting mobilization…"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                        }}
+                        onBlur={(e) => {
+                          const v = e.target.value.trim().slice(0, 500);
+                          if ((t.progressStatus || '') !== v) {
+                            onPatchTask(t.id, { progressStatus: v });
+                          }
+                        }}
+                        className={bareInput}
+                        aria-label="Progress status comment"
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Delete "${t.name}"? This cannot be undone.`)) {
+                            onDeleteTask(t.id);
+                          }
+                        }}
+                        className="text-slate-300 hover:text-red-500 text-lg leading-none"
+                        title="Delete task"
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -197,7 +187,7 @@ export default function TrackerTable({
           onClick={() => setShowQuickSet((v) => !v)}
           className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 mb-2"
         >
-          {showQuickSet ? '▾ Hide' : '▸ Show'} importance, section &amp; progress editor
+          {showQuickSet ? '▾ Hide' : '▸ Show'} importance &amp; progress editor
         </button>
         {showQuickSet && (
           <QuickSetTable tasks={tasks} title={displayHeader} onPatchTask={onPatchTask} />
@@ -205,10 +195,9 @@ export default function TrackerTable({
       </div>
 
       <p className="text-xs text-slate-400 text-center">
-        Edits save when you click away or press Enter. Importance = how much the task matters
-        to the project — the higher the weight, the more it moves the overall performance.
+        Edits save when you click away or press Enter. The higher a task&apos;s importance, the
+        more its progress moves the overall performance.
       </p>
     </div>
   );
 }
-

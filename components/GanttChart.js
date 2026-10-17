@@ -1,12 +1,10 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { parseDate, addDays, diffDays, todayISO, formatDateShort } from '@/lib/dates';
 import { PRIORITY } from '@/lib/priority';
-import { groupTasksBySection } from '@/lib/sections';
 
 const ROW_H = 44;
-const SECTION_H = 36;
 const HEADER_H = 52;
 const SIDEBAR_W = 260;
 const ZOOMS = {
@@ -65,8 +63,6 @@ export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', project
     });
     return list;
   }, [days]);
-
-  const groups = useMemo(() => groupTasksBySection(tasks), [tasks]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -188,83 +184,60 @@ export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', project
                 })}
               </div>
 
-              {groups.map((group, gi) => (
-                <Fragment key={group.section ? `${group.section}-${gi}` : 'all-tasks'}>
-                  {/* Section band */}
-                  {group.section && (
-                    <div className="relative flex" style={{ height: SECTION_H }}>
-                      <div
-                        className="shrink-0 sticky left-0 z-20 flex items-center bg-amber-100 dark:bg-amber-900/40 border-r border-b border-amber-200 dark:border-amber-800 px-4"
-                        style={{ width: SIDEBAR_W }}
-                      >
-                        <span className="text-[12px] font-extrabold text-amber-800 dark:text-amber-200 truncate">
-                          {group.section}
-                        </span>
-                      </div>
-                      <div
-                        className="shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200/70 dark:border-amber-800/70"
-                        style={{ width: timelineW }}
+              {tasks.map((task) => {
+                const p = PRIORITY[task.priority] || PRIORITY.normal;
+                const s = parseDate(task.startDate);
+                const e = parseDate(task.endDate);
+                const left = diffDays(days[0], s) * dayWidth + 2;
+                const width = Math.max(8, (diffDays(s, e) + 1) * dayWidth - 4);
+                return (
+                  <div key={task.id} className="relative flex group" style={{ height: ROW_H }}>
+                    {/* Sidebar cell */}
+                    <div
+                      className="shrink-0 sticky left-0 z-20 flex items-center gap-2 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r border-b border-slate-100 dark:border-slate-800 px-4"
+                      style={{ width: SIDEBAR_W }}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: p.dot }}
+                        title={`${p.label} task`}
                       />
-                    </div>
-                  )}
-
-                  {/* Task rows */}
-                  {group.tasks.map((task) => {
-                    const p = PRIORITY[task.priority] || PRIORITY.normal;
-                    const s = parseDate(task.startDate);
-                    const e = parseDate(task.endDate);
-                    const left = diffDays(days[0], s) * dayWidth + 2;
-                    const width = Math.max(8, (diffDays(s, e) + 1) * dayWidth - 4);
-                    return (
-                      <div key={task.id} className="relative flex group" style={{ height: ROW_H }}>
-                        {/* Sidebar cell */}
-                        <div
-                          className="shrink-0 sticky left-0 z-20 flex items-center gap-2 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r border-b border-slate-100 dark:border-slate-800 px-4"
-                          style={{ width: SIDEBAR_W }}
-                        >
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: p.dot }}
-                            title={`${p.label} task`}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-medium text-slate-800 dark:text-slate-100 truncate">
-                              {task.name}
-                            </p>
-                            <p className="text-[11px] text-slate-400 truncate">
-                              {formatDateShort(task.startDate)} – {formatDateShort(task.endDate)}
-                            </p>
-                          </div>
-                          <span
-                            className={`ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${p.badge}`}
-                          >
-                            {p.label}
-                          </span>
-                        </div>
-                        {/* Timeline cell — solid bar with the task name on it */}
-                        <div
-                          className="relative shrink-0 group-hover:bg-slate-50/60 dark:group-hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800"
-                          style={{ width: timelineW }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => onEditTask(task)}
-                            title={`${task.name} · ${p.label} · ${task.startDate} → ${task.endDate} — click to edit`}
-                            className="absolute top-1/2 -translate-y-1/2 h-[22px] rounded-md overflow-hidden shadow-sm ring-1 ring-black/10 hover:ring-2 hover:ring-slate-400 dark:hover:ring-slate-500 transition-all z-10 text-left"
-                            style={{ left, width, backgroundColor: p.bar }}
-                          >
-                            {width >= 60 && (
-                              <span className="absolute inset-0 flex items-center px-2 text-[11px] font-bold text-white whitespace-nowrap overflow-hidden drop-shadow-sm">
-                                {task.name}
-                              </span>
-                            )}
-                          </button>
-                        </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium text-slate-800 dark:text-slate-100 truncate">
+                          {task.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {formatDateShort(task.startDate)} – {formatDateShort(task.endDate)}
+                        </p>
                       </div>
-                    );
-                  })}
-                </Fragment>
-              ))}
+                      <span
+                        className={`ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${p.badge}`}
+                      >
+                        {p.label}
+                      </span>
+                    </div>
+                    {/* Timeline cell — solid bar with the task name on it */}
+                    <div
+                      className="relative shrink-0 group-hover:bg-slate-50/60 dark:group-hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800"
+                      style={{ width: timelineW }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onEditTask(task)}
+                        title={`${task.name} · ${p.label} · ${task.startDate} → ${task.endDate} — click to edit`}
+                        className="absolute top-1/2 -translate-y-1/2 h-[22px] rounded-md overflow-hidden shadow-sm ring-1 ring-black/10 hover:ring-2 hover:ring-slate-400 dark:hover:ring-slate-500 transition-all z-10 text-left"
+                        style={{ left, width, backgroundColor: p.bar }}
+                      >
+                        {width >= 60 && (
+                          <span className="absolute inset-0 flex items-center px-2 text-[11px] font-bold text-white whitespace-nowrap overflow-hidden drop-shadow-sm">
+                            {task.name}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
