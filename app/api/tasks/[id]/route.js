@@ -34,6 +34,12 @@ export async function PATCH(req, { params }) {
   if (body.progress !== undefined) {
     fields.progress = Math.max(0, Math.min(100, Math.round(Number(body.progress) || 0)));
   }
+  if (body.weight !== undefined) {
+    fields.weight = Math.max(1, Math.min(100, Math.round(Number(body.weight) || 1)));
+  }
+  if (body.progressStatus !== undefined) {
+    fields.progressStatus = String(body.progressStatus).trim().slice(0, 500);
+  }
   if (!Object.keys(fields).length) {
     return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
   }

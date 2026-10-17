@@ -13,11 +13,11 @@ const ZOOMS = {
   month: 3.5,
 };
 
-export default function GanttChart({ tasks, zoom, onEditTask }) {
+export default function GanttChart({ tasks, zoom, showProgress = true, sidebarLabel = 'Task', onEditTask }) {
   const dayWidth = ZOOMS[zoom] || ZOOMS.day;
   const scrollRef = useRef(null);
 
-  const { days, todayIdx } = useMemo(() => {
+  const { days } = useMemo(() => {
     let min = null;
     let max = null;
     for (const t of tasks) {
@@ -36,10 +36,7 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
 
     const total = diffDays(start, end) + 1;
     const arr = Array.from({ length: total }, (_, i) => addDays(start, i));
-
-    const today = todayISO();
-    const idx = arr.findIndex((d) => d.toISOString().slice(0, 10) === today);
-    return { days: arr, todayIdx: idx };
+    return { days: arr };
   }, [tasks]);
 
   const months = useMemo(() => {
@@ -62,30 +59,30 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
     return list;
   }, [days]);
 
-  // Jump the view to "today" when it mounts or the zoom changes.
+  // Start the view at the beginning of the schedule.
   useEffect(() => {
-    if (scrollRef.current && todayIdx >= 0) {
-      scrollRef.current.scrollLeft = Math.max(0, todayIdx * dayWidth - 140);
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
     }
-  }, [zoom, todayIdx, dayWidth]);
+  }, [zoom]);
 
   const timelineW = days.length * dayWidth;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
       <div ref={scrollRef} className="gantt-scroll overflow-auto max-h-[68vh]">
         <div className="relative" style={{ width: SIDEBAR_W + timelineW, minWidth: '100%' }}>
           {/* ------- Header ------- */}
           <div
-            className="sticky top-0 z-20 flex bg-white/95 backdrop-blur border-b border-slate-200"
+            className="sticky top-0 z-20 flex bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-700"
             style={{ height: HEADER_H }}
           >
             <div
-              className="shrink-0 sticky left-0 z-30 flex items-end justify-between bg-white border-r border-slate-200 px-4 pb-2"
+              className="shrink-0 sticky left-0 z-30 flex items-end justify-between bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 px-4 pb-2"
               style={{ width: SIDEBAR_W }}
             >
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Task
+                {sidebarLabel || 'Task'}
               </span>
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Schedule
@@ -93,38 +90,34 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
             </div>
             <div className="relative shrink-0" style={{ width: timelineW }}>
               {/* Month labels */}
-              <div className="flex h-6 border-b border-slate-100">
+              <div className="flex h-6 border-b border-slate-100 dark:border-slate-800">
                 {months.map((m) => (
                   <div
                     key={m.key}
-                    className="px-2 flex items-center text-xs font-semibold text-slate-700 border-r border-slate-200 whitespace-nowrap overflow-hidden"
+                    className="px-2 flex items-center text-xs font-semibold text-slate-700 dark:text-slate-200 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap overflow-hidden"
                     style={{ width: m.days * dayWidth }}
                   >
                     {m.days * dayWidth > 84 ? m.label : m.days * dayWidth > 26 ? m.short : ''}
                   </div>
                 ))}
               </div>
-              {/* Day / week / month ticks */}
+              {/* Day ticks */}
               <div className="relative h-7">
                 {dayWidth >= 24 &&
                   days.map((d, i) => {
-                    const isToday = i === todayIdx;
+                    const weekend = d.getUTCDay() === 0 || d.getUTCDay() === 6;
                     return (
                       <div
                         key={i}
-                        className={`absolute top-0 flex flex-col items-center justify-center border-r border-slate-100 ${
-                          isToday ? 'bg-amber-50' : ''
+                        className={`absolute top-0 flex flex-col items-center justify-center border-r border-slate-100 dark:border-slate-800 ${
+                          weekend ? 'bg-slate-50 dark:bg-slate-800' : ''
                         }`}
                         style={{ left: i * dayWidth, width: dayWidth, height: '100%' }}
                       >
                         <span className="text-[9px] uppercase leading-none text-slate-400">
                           {d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }).slice(0, 2)}
                         </span>
-                        <span
-                          className={`text-[11px] font-semibold leading-tight ${
-                            isToday ? 'text-amber-600' : 'text-slate-600'
-                          }`}
-                        >
+                        <span className="text-[11px] font-semibold leading-tight text-slate-600 dark:text-slate-300">
                           {d.getUTCDate()}
                         </span>
                       </div>
@@ -138,7 +131,7 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
                     return (
                       <div
                         key={i}
-                        className="absolute top-0 bottom-0 border-l border-slate-300 pl-1.5 flex items-center text-[10px] text-slate-500 whitespace-nowrap"
+                        className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-slate-600 pl-1.5 flex items-center text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap"
                         style={{ left: i * dayWidth }}
                       >
                         {showWeek
@@ -147,16 +140,6 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
                       </div>
                     );
                   })}
-                {todayIdx >= 0 && (
-                  <div
-                    className="absolute top-0.5 z-10 pointer-events-none"
-                    style={{ left: todayIdx * dayWidth + dayWidth / 2 }}
-                  >
-                    <span className="-translate-x-1/2 inline-block text-[9px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 border border-amber-300 rounded px-1.5 py-px">
-                      Today
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -169,16 +152,18 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
             >
               <div>
                 <p className="text-4xl">🗓️</p>
-                <p className="mt-3 font-semibold text-slate-700">No tasks yet</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Click <span className="font-semibold">+ New task</span> to add your first task
-                  to the timeline.
+                <p className="mt-3 font-semibold text-slate-700 dark:text-slate-200">
+                  No tasks yet
+                </p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Click <span className="font-semibold">+ New task</span> to add your first task,
+                  or <span className="font-semibold">⬆ Import Excel</span> to bring in a whole list.
                 </p>
               </div>
             </div>
           ) : (
             <div className="relative">
-              {/* Grid + weekend shading + today line */}
+              {/* Grid + weekend shading */}
               <div
                 className="absolute inset-y-0 z-0 pointer-events-none"
                 style={{ left: SIDEBAR_W, width: timelineW }}
@@ -189,24 +174,13 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
                   return (
                     <div
                       key={i}
-                      className="absolute inset-y-0 border-r border-slate-100"
-                      style={{
-                        left: i * dayWidth,
-                        width: dayWidth,
-                        backgroundColor: weekend && dayWidth >= 14 ? '#f8fafc' : undefined,
-                      }}
+                      className={`absolute inset-y-0 border-r border-slate-100 dark:border-slate-800 ${
+                        weekend && dayWidth >= 14 ? 'bg-slate-50 dark:bg-slate-800/60' : ''
+                      }`}
+                      style={{ left: i * dayWidth, width: dayWidth }}
                     />
                   );
                 })}
-                {todayIdx >= 0 && (
-                  <div
-                    className="absolute inset-y-0 z-10"
-                    style={{
-                      left: todayIdx * dayWidth + dayWidth / 2,
-                      borderLeft: '2px dashed #f59e0b',
-                    }}
-                  />
-                )}
               </div>
 
               {tasks.map((task) => {
@@ -215,11 +189,12 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
                 const e = parseDate(task.endDate);
                 const left = diffDays(days[0], s) * dayWidth + 2;
                 const width = Math.max(8, (diffDays(s, e) + 1) * dayWidth - 4);
+                const prog = Math.max(0, Math.min(100, task.progress || 0));
                 return (
                   <div key={task.id} className="relative flex group" style={{ height: ROW_H }}>
                     {/* Sidebar cell */}
                     <div
-                      className="shrink-0 sticky left-0 z-20 flex items-center gap-2 bg-white group-hover:bg-slate-50 border-r border-b border-slate-100 px-4"
+                      className="shrink-0 sticky left-0 z-20 flex items-center gap-2 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r border-b border-slate-100 dark:border-slate-800 px-4"
                       style={{ width: SIDEBAR_W }}
                     >
                       <span
@@ -228,7 +203,7 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
                         title={`${p.label} task`}
                       />
                       <div className="min-w-0">
-                        <p className="text-[13px] font-medium text-slate-800 truncate">
+                        <p className="text-[13px] font-medium text-slate-800 dark:text-slate-100 truncate">
                           {task.name}
                         </p>
                         <p className="text-[11px] text-slate-400 truncate">
@@ -243,23 +218,29 @@ export default function GanttChart({ tasks, zoom, onEditTask }) {
                     </div>
                     {/* Timeline cell */}
                     <div
-                      className="relative shrink-0 group-hover:bg-slate-50/60 border-b border-slate-100"
+                      className="relative shrink-0 group-hover:bg-slate-50/60 dark:group-hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800"
                       style={{ width: timelineW }}
                     >
                       <button
                         type="button"
                         onClick={() => onEditTask(task)}
-                        title={`${task.name} · ${p.label} · ${task.startDate} → ${task.endDate} · ${task.progress}% complete — click to edit`}
-                        className="absolute top-1/2 -translate-y-1/2 h-[22px] rounded-md overflow-hidden shadow-sm ring-1 ring-black/10 hover:ring-2 hover:ring-slate-400 transition-all z-10 text-left"
+                        title={`${task.name} · ${p.label} · ${task.startDate} → ${task.endDate}${showProgress ? ` · ${prog}% complete` : ''} — click to edit`}
+                        className="absolute top-1/2 -translate-y-1/2 h-[22px] rounded-md overflow-hidden shadow-sm ring-1 ring-black/10 hover:ring-2 hover:ring-slate-400 dark:hover:ring-slate-500 transition-all z-10 text-left"
                         style={{ left, width }}
                       >
-                        <span
-                          className="absolute inset-y-0 left-0"
-                          style={{ width: `${task.progress}%`, backgroundColor: p.fill }}
-                        />
-                        <span className="relative z-10 flex items-center justify-center h-full px-1.5 text-[10px] font-bold text-white whitespace-nowrap drop-shadow-sm">
-                          {width >= 46 ? `${task.progress}%` : ''}
-                        </span>
+                        {showProgress ? (
+                          <>
+                            <span
+                              className="absolute inset-y-0 left-0"
+                              style={{ width: `${prog}%`, backgroundColor: p.fill }}
+                            />
+                            <span className="relative z-10 flex items-center justify-center h-full px-1.5 text-[10px] font-bold text-white whitespace-nowrap drop-shadow-sm">
+                              {width >= 46 ? `${prog}%` : ''}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="absolute inset-0" style={{ backgroundColor: p.bar }} />
+                        )}
                       </button>
                     </div>
                   </div>

@@ -13,14 +13,14 @@ const PRIORITY_OPTIONS = [
     label: 'Normal',
     hint: 'Standard task',
     dot: '#3b82f6',
-    active: 'border-blue-500 bg-blue-50 text-blue-700',
+    active: 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
   },
   {
     value: 'critical',
     label: 'Critical',
     hint: 'Must not slip — shown in red',
     dot: '#ef4444',
-    active: 'border-red-500 bg-red-50 text-red-700',
+    active: 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
   },
 ];
 
@@ -33,6 +33,7 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
   );
   const [priority, setPriority] = useState(task?.priority || 'normal');
   const [progress, setProgress] = useState(task?.progress ?? 0);
+  const [weight, setWeight] = useState(task?.weight ?? 1);
   const [localError, setLocalError] = useState('');
 
   const shownError = localError || error;
@@ -50,8 +51,12 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
       setLocalError('End date cannot be before the start date.');
       return;
     }
-    onSave({ name: name.trim(), startDate, endDate, priority, progress }, task?.id);
+    const w = Math.max(1, Math.min(100, Math.round(Number(weight) || 1)));
+    onSave({ name: name.trim(), startDate, endDate, priority, progress, weight: w }, task?.id);
   }
+
+  const inputCls =
+    'w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500';
 
   return (
     <div
@@ -59,17 +64,17 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 max-h-[92vh] overflow-auto"
+        className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 shadow-2xl p-6 max-h-[92vh] overflow-auto"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
             {editing ? 'Edit task' : 'New task'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl leading-none px-1"
             aria-label="Close"
           >
             ×
@@ -78,13 +83,13 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
 
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           {shownError && (
-            <p className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">
+            <p className="rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm px-3 py-2">
               {shownError}
             </p>
           )}
 
           <div>
-            <label htmlFor="task-name" className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="task-name" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Task name
             </label>
             <input
@@ -95,13 +100,13 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Design homepage"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className={inputCls}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="task-start" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="task-start" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 Start date
               </label>
               <input
@@ -110,11 +115,11 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
                 required
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={inputCls}
               />
             </div>
             <div>
-              <label htmlFor="task-end" className="block text-sm font-medium text-slate-700 mb-1">
+              <label htmlFor="task-end" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 End date
               </label>
               <input
@@ -123,14 +128,14 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
                 required
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={inputCls}
               />
             </div>
           </div>
 
           {/* Priority selector */}
           <div>
-            <span className="block text-sm font-medium text-slate-700 mb-1">Priority</span>
+            <span className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Priority</span>
             <div className="grid grid-cols-2 gap-2">
               {PRIORITY_OPTIONS.map((opt) => {
                 const active = priority === opt.value;
@@ -138,7 +143,7 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
                   <label
                     key={opt.value}
                     className={`cursor-pointer rounded-lg border-2 px-3 py-2.5 text-center transition ${
-                      active ? opt.active : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                      active ? opt.active : 'border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-500'
                     }`}
                   >
                     <input
@@ -164,24 +169,46 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
             </div>
           </div>
 
-          {/* Progress */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label htmlFor="task-progress" className="text-sm font-medium text-slate-700">
-                Progress
-              </label>
-              <span className="text-sm font-semibold text-slate-700">{progress}%</span>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Progress */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="task-progress" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Progress
+                </label>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{progress}%</span>
+              </div>
+              <input
+                id="task-progress"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={progress}
+                onChange={(e) => setProgress(Number(e.target.value))}
+                className="w-full accent-indigo-600"
+              />
             </div>
-            <input
-              id="task-progress"
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="w-full accent-indigo-600"
-            />
+            {/* Weight */}
+            <div>
+              <label htmlFor="task-weight" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Weight
+              </label>
+              <input
+                id="task-weight"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                required
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className={`${inputCls} py-2`}
+              />
+              <p className="mt-1 text-[11px] text-slate-400">
+                Higher = counts more in the overall progress.
+              </p>
+            </div>
           </div>
 
           {/* Live bar preview */}
@@ -212,7 +239,7 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
               <button
                 type="button"
                 onClick={onClose}
-                className="text-sm font-semibold text-slate-600 hover:text-slate-800 px-4 py-2"
+                className="text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 px-4 py-2"
               >
                 Cancel
               </button>

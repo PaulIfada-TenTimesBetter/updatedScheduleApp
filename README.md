@@ -9,14 +9,29 @@ backed by **Neon Postgres**.
 - 🔐 **Accounts & passwords** — anyone must create an account (email + password) before using
   the app. Passwords are hashed with bcrypt and sessions use signed, httpOnly JWT cookies.
 - 👤 **Private schedules** — every user sees and manages only their own tasks.
-- 🚩 **Priority per task** — when creating or editing a task you pick **Critical** or **Normal**.
-- 🗺️ **Legend** — red = critical task, blue = normal task, darker fill = completed progress,
-  dashed amber line = today.
-- 📈 **Zoomable Gantt timeline** — Day / Week / Month views, weekend shading, today marker,
-  progress on each bar, click a bar to edit.
-- 📸 **Snapshot export** — one click downloads the whole chart (title, dates, bars, legend)
-  as a high-resolution PNG for reports and presentations.
-- 📊 Stats: total tasks, critical count, average progress.
+- 🚩 **Priority per task** — Critical (red) or Normal (blue), chosen when creating/editing.
+- 🗺️ **Legend** — red = critical task, blue = normal task, darker fill = completed progress.
+- 📈 **Zoomable Gantt timeline** — Day / Week / Month views, weekend shading, progress on
+  each bar, click a bar to edit.
+- 📊 **Two sections** — a **📅 Scheduler** tab (the Gantt timeline) and a **📊 Progress
+  Tracker** tab (no dates — just each activity's progress bar, editable **weights**, and a
+  **Progress Status** comments column). Weights drive a weighted **Overall Project
+  Performance** percentage, like a bi-weekly performance sheet.
+- 📸 **Snapshot export** — downloads the chart (title, dates, bars, legend) as a
+  high-resolution PNG.
+- 🌗 **Dark / light mode** — toggle in the header; the choice is remembered per device.
+- 📝 **Custom chart title & row label** — click the big title (e.g. "NIGER STATE GAS MASTER
+  PLAN") or the row-label box (default "Task") to change what the chart says. Both appear
+  in the PNG snapshot too.
+- 📊 **Progress toggle** — show progress-filled bars with % inside, or switch to **solid
+  bars** to ignore progress entirely.
+- 📥 **Excel import** — upload an .xlsx/.xls/.csv, pick the sheet and the **column that
+  holds the task names** (date and progress columns optional — auto-detected where
+  possible, including files with title rows above the table). Import up to 500 tasks at
+  once.
+- ⚖️ **Task weight** — set per task (1–100); re-ranks how much each task counts toward
+  overall progress.
+- 📊 Stats: total tasks, critical count, weighted overall progress.
 
 ## Project structure
 
