@@ -4,6 +4,7 @@ import { useState } from 'react';
 import GanttChart from './GanttChart';
 import TaskModal from './TaskModal';
 import Legend from './Legend';
+import { downloadGanttPng } from '@/lib/exportGantt';
 
 export default function SchedulerApp({ user, initialTasks, demoMode, loadError }) {
   const [tasks, setTasks] = useState(initialTasks || []);
@@ -75,6 +76,14 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     window.location.href = '/login';
+  }
+
+  function handleSnapshot() {
+    downloadGanttPng({
+      tasks,
+      zoom,
+      title: user.name ? `${user.name}'s schedule` : 'Project Schedule',
+    });
   }
 
   return (
@@ -162,6 +171,14 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
               </button>
             ))}
           </div>
+          <button
+            onClick={handleSnapshot}
+            disabled={!tasks.length}
+            title="Download the chart as a PNG image"
+            className="rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-semibold text-xs px-3.5 py-2.5"
+          >
+            ⬇ Snapshot (PNG)
+          </button>
           <div className="ml-auto">
             <Legend />
           </div>

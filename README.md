@@ -14,6 +14,8 @@ backed by **Neon Postgres**.
   dashed amber line = today.
 - 📈 **Zoomable Gantt timeline** — Day / Week / Month views, weekend shading, today marker,
   progress on each bar, click a bar to edit.
+- 📸 **Snapshot export** — one click downloads the whole chart (title, dates, bars, legend)
+  as a high-resolution PNG for reports and presentations.
 - 📊 Stats: total tasks, critical count, average progress.
 
 ## Project structure
@@ -91,6 +93,33 @@ Open the site → **Create account** (email + password) → add tasks, flag whic
 3. To see the real server error: **Netlify → Logs → Functions** (match the Digest number
    from the error page to the log entry).
 4. If you changed `AUTH_SECRET`, old logins become invalid — simply log in again.
+
+**Yellow "Demo mode" banner on the live site**
+
+That banner means `DATABASE_URL` is **not reaching that deploy** — the site is saving
+accounts and tasks to a temporary file on Netlify's server, which is wiped regularly.
+Symptoms: a login that worked before now says "Invalid email or password", tasks disappear,
+and nothing shows up in your Neon `users` table.
+
+Fix: Netlify → **Site configuration → Environment variables** → confirm the key is exactly
+`DATABASE_URL` with the raw Neon string (no quotes) → then **Deploys → Trigger deploy →
+Clear cache and deploy site** → open `/api/health` and require
+`{"mode":"production","database":"connected"}` before signing up again. Any account or task
+created while the banner was showing is gone for good — re-create it once connected.
+
+**"Could not create your account. Please try again." (on signup)**
+
+The server could not reach Neon. Open `/api/health` and match the `message`:
+
+| `message` says | Cause → fix |
+| --- | --- |
+| `fetch failed` / `ENOTFOUND` | Host wrong or unreachable → recopy the **pooled** connection string from Neon → Connect. |
+| `password authentication failed…` | Wrong password in the string → reset the role password in Neon or recopy. |
+| `Invalid URL` / garbage | Quotes/spaces pasted into the Netlify value → paste the raw string only. |
+| `mode:"demo"` | `DATABASE_URL` not reaching the app → check the key name is exactly right, then redeploy. |
+
+Remember: env-var changes only apply after **Deploys → Trigger deploy → Clear cache and
+deploy site**.
 
 **Fixed in this version:** the Neon serverless driver v1.x only accepts tagged-template
 queries (`sql`…``) or `sql.query("… WHERE x = $1", [x])`. Earlier code used removed calling

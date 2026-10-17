@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { parseDate, addDays, diffDays, todayISO, formatDateShort } from '@/lib/dates';
+import { PRIORITY } from '@/lib/priority';
 
 const ROW_H = 44;
 const HEADER_H = 52;
@@ -10,23 +11,6 @@ const ZOOMS = {
   day: 36,
   week: 12,
   month: 3.5,
-};
-
-export const PRIORITY = {
-  critical: {
-    label: 'Critical',
-    bar: '#ef4444',
-    fill: '#991b1b',
-    dot: '#ef4444',
-    badge: 'bg-red-100 text-red-700',
-  },
-  normal: {
-    label: 'Normal',
-    bar: '#3b82f6',
-    fill: '#1e40af',
-    dot: '#3b82f6',
-    badge: 'bg-blue-100 text-blue-700',
-  },
 };
 
 export default function GanttChart({ tasks, zoom, onEditTask }) {
