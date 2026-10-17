@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { insertTask } from '@/lib/store';
 import { isValidISODate } from '@/lib/dates';
+import { clampWeight } from '@/lib/weightedProgress';
 
 const MAX_BULK = 500;
 
@@ -28,7 +29,7 @@ export async function POST(req) {
     const endDate = String(raw?.endDate || '');
     const priority = raw?.priority === 'critical' ? 'critical' : 'normal';
     const progress = Math.max(0, Math.min(100, Math.round(Number(raw?.progress) || 0)));
-    const weight = Math.max(1, Math.min(100, Math.round(Number(raw?.weight) || 1)));
+    const weight = clampWeight(raw?.weight); // server-side validation, shared 1-10 clamp
     const section = String(raw?.section || '').trim().slice(0, 120);
 
     if (!name || !isValidISODate(startDate) || !isValidISODate(endDate) || endDate < startDate) {

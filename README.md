@@ -30,7 +30,7 @@ backed by **Neon Postgres**.
   holds the task names** (date and progress columns optional — auto-detected where
   possible, including files with title rows above the table). Import up to 500 tasks at
   once.
-- ⚖️ **Task weight (1–100)** — re-ranks how much each task counts toward overall progress.
+- ⚖️ **Task importance (1–10)** — a fixed whole-number scale; 10 makes a task's progress count ten times more than 1. Enforced in the UI, on the server, and in the math.
 - 🏷️ **Task names on the bars** — the schedule prints each task's name on its bar.
 - 🔢 **S/N numbering** and an **editable tracker heading** — click the column header in the
   Progress Tracker to rename it; exports use the same heading.

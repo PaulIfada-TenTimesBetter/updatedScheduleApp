@@ -69,14 +69,15 @@ export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit 
                   <input
                     type="number"
                     min="1"
-                    max="100"
+                    max="10"
+                    step="1"
                     defaultValue={String(liveVal(t, 'weight') ?? 1)}
                     onChange={(e) => onType(t.id, 'weight', e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                     }}
                     onBlur={(e) => onCommit(t.id, 'weight', e.target.value)}
-                    title="Importance of this task to the project: 1 = minor, 5 = major, 10+ = critical path"
+                    title="Importance of this task to the project — whole numbers 1 to 10: 1 = minor, 5 = major, 10 = most critical"
                     className={`${inputBase} w-16 text-center`}
                     aria-label={`Importance weight for ${t.name}`}
                   />
@@ -113,9 +114,10 @@ export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit 
         </span>{' '}
         each task adds{' '}
         <code className="font-mono text-[10.5px]">progress × importance ÷ total importance</code>{' '}
-        points, and all points sum to the overall performance. Example: importance{' '}
-        <strong>85</strong> at 90% adds ~88.9 pts, while importance <strong>1</strong> at 100%
-        adds ~1.2 pts — the important task dominates, exactly as it should.
+        points, and all points sum to the overall performance. Importance runs on a fixed 1–10 scale (whole numbers — anything else is
+        brought back into range automatically). Example: importance{' '}
+        <strong>10</strong> at 90% adds ~81.8 pts, while importance <strong>1</strong> at 100%
+        adds ~9.1 pts — the important task dominates, exactly as it should.
       </div>
     </div>
   );

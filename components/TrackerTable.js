@@ -132,8 +132,8 @@ export default function TrackerTable({
             <code className="font-mono text-[10.5px]">
               overall = Σ (progress × importance) ÷ Σ importance
             </code>{' '}
-            — a task with importance 85 at 90% adds ~88.9 pts; importance 1 at 100% adds ~1.2
-            pts. Priority never changes this number.
+            — importance runs on a fixed 1–10 scale: a task with importance 10 at 90% adds
+            ~81.8 pts; importance 1 at 100% adds ~9.1 pts. Priority never changes this number.
           </p>
         </div>
       </div>

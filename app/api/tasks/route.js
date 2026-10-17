@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { listTasks, insertTask } from '@/lib/store';
 import { isValidISODate } from '@/lib/dates';
+import { clampWeight } from '@/lib/weightedProgress';
 
 export async function GET() {
   const user = await getSessionUser();
@@ -33,7 +34,7 @@ function validateTaskBody(body) {
   const endDate = String(body.endDate || '');
   const priority = body.priority === 'critical' ? 'critical' : 'normal';
   const progress = Math.max(0, Math.min(100, Math.round(Number(body.progress) || 0)));
-  const weight = Math.max(1, Math.min(100, Math.round(Number(body.weight) || 1)));
+  const weight = clampWeight(body.weight); // server-side validation, shared 1-10 clamp
   const progressStatus = String(body.progressStatus || '').trim().slice(0, 500);
   const section = String(body.section || '').trim().slice(0, 120);
 

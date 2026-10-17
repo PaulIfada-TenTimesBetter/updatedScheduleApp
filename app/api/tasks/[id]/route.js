@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { updateTask, deleteTask } from '@/lib/store';
 import { isValidISODate } from '@/lib/dates';
+import { clampWeight } from '@/lib/weightedProgress';
 
 export async function PATCH(req, { params }) {
   const user = await getSessionUser();
@@ -35,7 +36,7 @@ export async function PATCH(req, { params }) {
     fields.progress = Math.max(0, Math.min(100, Math.round(Number(body.progress) || 0)));
   }
   if (body.weight !== undefined) {
-    fields.weight = Math.max(1, Math.min(100, Math.round(Number(body.weight) || 1)));
+    fields.weight = clampWeight(body.weight); // server-side validation, shared 1-10 clamp
   }
   if (body.progressStatus !== undefined) {
     fields.progressStatus = String(body.progressStatus).trim().slice(0, 500);
