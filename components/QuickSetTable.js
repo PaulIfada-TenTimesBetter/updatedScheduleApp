@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { PRIORITY } from '@/lib/priority';
 
 const inputBase =
@@ -16,45 +15,46 @@ function clampProgress(v) {
 }
 
 /**
- * Quick-set editor: S/N, task, Importance, Progress (%), and a live
- * "Contribution" readout so the math is visible:
+ * Quick-set editor: S/N, task, Importance, Progress (%), and a LIVE
+ * "Contribution" column that updates while you type:
  *   contribution = progress × importance ÷ total importance
- * The contributions of all tasks sum exactly to the overall performance.
- * Inputs are uncontrolled (defaultValue) and commit on blur/Enter.
+ * Inputs themselves are uncontrolled (defaultValue) and only SAVE on
+ * blur/Enter — so live math can never cause the snap-back bug.
  */
-export default function QuickSetTable({ tasks, title, onPatchTask }) {
+export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit }) {
   const displayHeader = title || 'Task';
 
-  const totalWeight = useMemo(
-    () => tasks.reduce((s, t) => s + clampWeight(t.weight), 0),
-    [tasks]
+  const clampFor = {
+    weight: clampWeight,
+    progress: clampProgress,
+  };
+
+  const totalWeight = tasks.reduce(
+    (s, t) => s + clampWeight(Number(liveVal(t, 'weight'))),
+    0
   );
 
   function contribution(t) {
+    const w = clampWeight(Number(liveVal(t, 'weight')));
+    const p = clampProgress(Number(liveVal(t, 'progress')));
     if (!totalWeight) return 0;
-    return ((t.progress || 0) * clampWeight(t.weight)) / totalWeight;
-  }
-
-  function commitNumber(t, field, raw, clamp) {
-    const value = clamp(raw);
-    if (Number(t[field]) === value) return;
-    onPatchTask(t.id, { [field]: value });
+    return (p * w) / totalWeight;
   }
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
       <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-        Importance &amp; progress — edit a box, then click away (or press Enter) to save
+        Importance &amp; progress — the Contribution column updates as you type; click away to save
       </div>
       <div className="gantt-scroll overflow-x-auto">
-        <table className="w-full text-sm" style={{ minWidth: 760 }}>
+        <table className="w-full text-sm" style={{ minWidth: 780 }}>
           <thead>
             <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
               <th className="px-3 py-2.5 w-14">S/N</th>
               <th className="px-3 py-2.5">{displayHeader}</th>
               <th className="px-3 py-2.5 w-32 text-center">Importance</th>
               <th className="px-3 py-2.5 w-32">Progress (%)</th>
-              <th className="px-3 py-2.5 w-32">Contribution</th>
+              <th className="px-3 py-2.5 w-36">Contribution</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -76,11 +76,12 @@ export default function QuickSetTable({ tasks, title, onPatchTask }) {
                     type="number"
                     min="1"
                     max="100"
-                    defaultValue={String(t.weight ?? 1)}
+                    defaultValue={String(liveVal(t, 'weight') ?? 1)}
+                    onChange={(e) => onType(t.id, 'weight', e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                     }}
-                    onBlur={(e) => commitNumber(t, 'weight', e.target.value, clampWeight)}
+                    onBlur={(e) => onCommit(t.id, 'weight', e.target.value)}
                     title="Importance of this task to the project: 1 = minor, 5 = major, 10+ = critical path"
                     className={`${inputBase} w-16 text-center`}
                     aria-label={`Importance weight for ${t.name}`}
@@ -92,11 +93,12 @@ export default function QuickSetTable({ tasks, title, onPatchTask }) {
                     min="0"
                     max="100"
                     step="5"
-                    defaultValue={String(t.progress ?? 0)}
+                    defaultValue={String(liveVal(t, 'progress') ?? 0)}
+                    onChange={(e) => onType(t.id, 'progress', e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                     }}
-                    onBlur={(e) => commitNumber(t, 'progress', e.target.value, clampProgress)}
+                    onBlur={(e) => onCommit(t.id, 'progress', e.target.value)}
                     className={`${inputBase} w-20 text-center`}
                     aria-label={`Progress percentage for ${t.name}`}
                   />
@@ -113,14 +115,13 @@ export default function QuickSetTable({ tasks, title, onPatchTask }) {
       </div>
       <div className="px-4 py-2.5 text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800">
         <span className="font-semibold text-slate-500 dark:text-slate-300">
-          How the overall is computed:
+          How it works:
         </span>{' '}
-        each task contributes{' '}
+        each task adds{' '}
         <code className="font-mono text-[10.5px]">progress × importance ÷ total importance</code>{' '}
-        — so a figure of <strong>7</strong> makes that task&apos;s progress count 7× more than a
-        figure of 1. The contributions of all tasks add up to the overall performance.
-        Importance = how much the task matters: <strong>1</strong> minor · <strong>3</strong>{' '}
-        useful · <strong>5</strong> major · <strong>8+</strong> critical path.
+        points, and all points sum to the overall performance. Example: importance{' '}
+        <strong>85</strong> at 90% adds ~88.9 pts, while importance <strong>1</strong> at 100%
+        adds ~1.2 pts — the important task dominates, exactly as it should.
       </div>
     </div>
   );

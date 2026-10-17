@@ -10,12 +10,18 @@ const bareInput =
 function clampWeight(v) {
   return Math.max(1, Math.min(100, Math.round(Number(v) || 1)));
 }
+function clampProgress(v) {
+  const n = Math.round(Number(v));
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(100, n));
+}
 
 /**
- * Progress Tracker — main table: S/N, task, progress bar (%) and progress
- * status, followed by the quick-set editor where Importance and Progress %
- * are entered. All inputs are uncontrolled (defaultValue) and commit on
- * blur/Enter, so server responses can never clobber what the user typed.
+ * Progress Tracker — overall performance, progress bars and the importance/
+ * progress editor. All math (overall %, contribution points, bars) updates
+ * LIVE while typing, from a local mirror. The inputs themselves are
+ * uncontrolled and only SAVE on blur/Enter, so server responses can never
+ * clobber what the user typed (no snap-back).
  */
 export default function TrackerTable({
   tasks,
@@ -27,20 +33,64 @@ export default function TrackerTable({
 }) {
   const displayHeader = (headerLabel || '').trim() || title || 'Task';
   const [showQuickSet, setShowQuickSet] = useState(true);
+  // Live display mirror: { [taskId]: { weight?: raw, progress?: raw } } —
+  // used ONLY for on-screen math while typing. Cleared on commit.
+  const [live, setLive] = useState({});
 
-  const totalWeight = useMemo(
-    () => tasks.reduce((s, t) => s + clampWeight(t.weight), 0),
-    [tasks]
+  function liveVal(t, field) {
+    const v = live[t.id]?.[field];
+    return v === undefined ? t[field] : v;
+  }
+
+  function onType(taskId, field, raw) {
+    setLive((prev) => ({
+      ...prev,
+      [taskId]: { ...(prev[taskId] || {}), [field]: raw },
+    }));
+  }
+
+  function onCommit(taskId, field, raw) {
+    const value =
+      field === 'weight' ? clampWeight(raw) : clampProgress(raw);
+    const committed = Number(tasks.find((t) => t.id === taskId)?.[field]);
+    if (committed !== value) {
+      onPatchTask(taskId, { [field]: value });
+    }
+    // Server truth takes over the display again.
+    setLive((prev) => {
+      const copy = { ...prev };
+      if (copy[taskId]) {
+        const next = { ...copy[taskId] };
+        delete next[field];
+        if (Object.keys(next).length) copy[taskId] = next;
+        else delete copy[taskId];
+      }
+      return copy;
+    });
+  }
+
+  // Live view of the tasks for ALL on-screen math (overall, bars).
+  const viewTasks = useMemo(
+    () =>
+      tasks.map((t) => ({
+        ...t,
+        weight: clampWeight(Number(liveVal(t, 'weight'))),
+        progress: clampProgress(Number(liveVal(t, 'progress'))),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tasks, live]
   );
+
+  const totalWeight = viewTasks.reduce((s, t) => s + t.weight, 0);
   const weighted = totalWeight
     ? Math.round(
-        tasks.reduce((s, t) => s + (t.progress || 0) * clampWeight(t.weight), 0) / totalWeight
+        viewTasks.reduce((s, t) => s + (t.progress || 0) * t.weight, 0) / totalWeight
       )
     : 0;
 
   return (
     <div className="space-y-5">
-      {/* Overall performance */}
+      {/* Overall performance — live */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-4 flex flex-wrap items-center gap-4">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -58,6 +108,9 @@ export default function TrackerTable({
             >
               {weighted}%
             </span>
+            <span className="ml-2 text-[11px] font-semibold text-slate-400">
+              (live — saves when you click away)
+            </span>
           </p>
         </div>
         <div className="flex-1 min-w-[200px]">
@@ -68,16 +121,16 @@ export default function TrackerTable({
             />
           </div>
           <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-            Every figure you enter counts:{' '}
             <code className="font-mono text-[10.5px]">
               overall = Σ (progress × importance) ÷ Σ importance
-            </code>
-            . Priority never changes this number — it only colors the bars.
+            </code>{' '}
+            — a task with importance 85 at 90% adds ~88.9 pts; importance 1 at 100% adds ~1.2
+            pts. Priority never changes this number.
           </p>
         </div>
       </div>
 
-      {/* Main table */}
+      {/* Main table — live bars */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
         <div className="gantt-scroll overflow-x-auto">
           <table className="w-full text-sm" style={{ minWidth: 780 }}>
@@ -102,14 +155,14 @@ export default function TrackerTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {tasks.length === 0 && (
+              {viewTasks.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                     No tasks yet — add them in the 📅 Scheduler tab, then track progress here.
                   </td>
                 </tr>
               )}
-              {tasks.map((t, i) => {
+              {viewTasks.map((t, i) => {
                 const p = PRIORITY[t.priority] || PRIORITY.normal;
                 const prog = Math.max(0, Math.min(100, t.progress || 0));
                 return (
@@ -190,13 +243,19 @@ export default function TrackerTable({
           {showQuickSet ? '▾ Hide' : '▸ Show'} importance &amp; progress editor
         </button>
         {showQuickSet && (
-          <QuickSetTable tasks={tasks} title={displayHeader} onPatchTask={onPatchTask} />
+          <QuickSetTable
+            tasks={viewTasks}
+            title={displayHeader}
+            liveVal={liveVal}
+            onType={onType}
+            onCommit={onCommit}
+          />
         )}
       </div>
 
       <p className="text-xs text-slate-400 text-center">
-        Edits save when you click away or press Enter. The higher a task&apos;s importance, the
-        more its progress moves the overall performance.
+        Everything recalculates as you type and saves when you click away or press Enter. The
+        higher a task&apos;s importance, the more its progress moves the overall performance.
       </p>
     </div>
   );
