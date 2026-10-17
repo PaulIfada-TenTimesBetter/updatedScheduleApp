@@ -21,3 +21,12 @@ html {
 .gantt-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Mobile: stop iOS Safari auto-zooming the page when an input is focused */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

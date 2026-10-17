@@ -28,6 +28,7 @@ export default function TrackerTable({
   tasks,
   title,
   headerLabel,
+  unitLabel = 'S/N',
   onHeaderLabelChange,
   onPatchTask,
   onDeleteTask,
@@ -99,7 +100,7 @@ export default function TrackerTable({
   return (
     <div className="space-y-5">
       {/* Overall performance — live */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-5 py-4 flex flex-wrap items-center gap-4">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Overall project performance
@@ -116,25 +117,22 @@ export default function TrackerTable({
             >
               {formatPercent(weighted)}%
             </span>
-            <span className="ml-2 text-[11px] font-semibold text-slate-400">
+            <span
+              className="ml-2 text-[11px] font-semibold text-slate-400"
+              title="overall = Σ (progress × importance) ÷ Σ importance — priority only colors the bars"
+            >
               (live — saves when you click away)
             </span>
           </p>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="sm:flex-1 w-full min-w-0">
           <div className="h-4 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all"
               style={{ width: `${weighted}%` }}
             />
           </div>
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-            <code className="font-mono text-[10.5px]">
-              overall = Σ (progress × importance) ÷ Σ importance
-            </code>{' '}
-            — importance runs on a fixed 1–10 scale: a task with importance 10 at 90% adds
-            ~81.8 pts; importance 1 at 100% adds ~9.1 pts. Priority never changes this number.
-          </p>
+
         </div>
       </div>
 
@@ -144,7 +142,7 @@ export default function TrackerTable({
           <table className="w-full text-sm" style={{ minWidth: 780 }}>
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                <th className="px-3 py-3 w-14">S/N</th>
+                <th className="px-3 py-3 w-14" title={`Serial number — numbered in ${unitLabel === 'WK' ? 'week' : unitLabel === 'MTH' ? 'month' : 'day'} units of the schedule`}>{unitLabel}</th>
                 <th className="px-3 py-2" style={{ minWidth: 220 }}>
                   <input
                     type="text"
@@ -211,6 +209,7 @@ export default function TrackerTable({
                         }}
                         onBlur={(e) => {
                           const v = e.target.value.trim().slice(0, 500);
+                          e.target.value = v; // show the canonical saved value
                           if ((t.progressStatus || '') !== v) {
                             onPatchTask(t.id, { progressStatus: v });
                           }
@@ -254,6 +253,7 @@ export default function TrackerTable({
           <QuickSetTable
             tasks={viewTasks}
             title={displayHeader}
+            unitLabel={unitLabel}
             liveVal={liveVal}
             onType={onType}
             onCommit={onCommit}

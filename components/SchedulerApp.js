@@ -46,9 +46,13 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
   const [chartTitle, setChartTitle] = useState(initialSettings?.projectTitle || '');
   const [projectStart, setProjectStart] = useState(initialSettings?.projectStart || '');
   const [projectEnd, setProjectEnd] = useState(initialSettings?.projectEnd || '');
+  const [meetingEnabled, setMeetingEnabled] = useState(initialSettings?.meetingEnabled || false);
+  const [meetingLabel, setMeetingLabel] = useState(initialSettings?.meetingLabel || '');
   const settingsTimer = useRef(null);
 
   const displayName = user.name || user.email;
+  // The tracker's serial-number column follows the schedule's timeline unit.
+  const unitLabel = zoom === 'week' ? 'WK' : zoom === 'month' ? 'MTH' : 'DAY';
   const criticalCount = tasks.filter((t) => t.priority === 'critical').length;
   const title = chartTitle.trim() || 'Project Schedule';
 
@@ -68,6 +72,8 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
             projectTitle: next.chartTitle ?? chartTitle,
             projectStart: next.projectStart ?? projectStart,
             projectEnd: next.projectEnd ?? projectEnd,
+            meetingEnabled: next.meetingEnabled ?? meetingEnabled,
+            meetingLabel: next.meetingLabel ?? meetingLabel,
           }),
         });
         if (res.status === 401) window.location.href = '/login';
@@ -86,6 +92,14 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
   function updateProjectEnd(v) {
     setProjectEnd(v);
     queueSettingsSave({ projectEnd: v });
+  }
+  function updateMeetingEnabled(v) {
+    setMeetingEnabled(v);
+    queueSettingsSave({ meetingEnabled: v }); // saves immediately (no typing)
+  }
+  function updateMeetingLabel(v) {
+    setMeetingLabel(v);
+    queueSettingsSave({ meetingLabel: v });
   }
 
   async function handleSave(data, taskId) {
@@ -212,11 +226,23 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
   }
 
   function handleTrackerPng() {
-    downloadTrackerPng({ tasks, title, headerLabel: trackerLabel });
+    downloadTrackerPng({
+      tasks,
+      title,
+      headerLabel: trackerLabel,
+      unitLabel,
+      meetingLabel: meetingEnabled ? meetingLabel.trim() : '',
+    });
   }
 
   function handleTrackerPdf() {
-    downloadTrackerPdf({ tasks, title, headerLabel: trackerLabel });
+    downloadTrackerPdf({
+      tasks,
+      title,
+      headerLabel: trackerLabel,
+      unitLabel,
+      meetingLabel: meetingEnabled ? meetingLabel.trim() : '',
+    });
   }
 
   const inputCls =
@@ -269,7 +295,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* Tabs */}
-        <div className="flex rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 w-fit">
+        <div className="flex rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 w-full sm:w-fit">
           {[
             ['scheduler', '📅 Scheduler'],
             ['tracker', '📊 Progress Tracker'],
@@ -277,7 +303,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${
+              className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-lg text-sm font-semibold text-center transition ${
                 tab === key
                   ? 'bg-indigo-600 text-white shadow'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -309,7 +335,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
         {/* Project title + duration (saved to your account) */}
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3.5 flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <label htmlFor="project-title" className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Project title
             </label>
@@ -323,8 +349,8 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               className="mt-0.5 w-full text-xl sm:text-2xl font-black bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-indigo-500 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600"
             />
           </div>
-          <div className="flex items-end gap-3 shrink-0">
-            <div>
+          <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
+            <div className="flex-1 min-w-[140px]">
               <label htmlFor="project-start" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Project start
               </label>
@@ -333,10 +359,10 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
                 type="date"
                 value={projectStart}
                 onChange={(e) => updateProjectStart(e.target.value)}
-                className={`${inputCls} mt-0.5`}
+                className={`${inputCls} mt-0.5 w-full`}
               />
             </div>
-            <div>
+            <div className="flex-1 min-w-[140px]">
               <label htmlFor="project-end" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Project end
               </label>
@@ -345,10 +371,10 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
                 type="date"
                 value={projectEnd}
                 onChange={(e) => updateProjectEnd(e.target.value)}
-                className={`${inputCls} mt-0.5`}
+                className={`${inputCls} mt-0.5 w-full`}
               />
             </div>
-            <div className="pb-1">
+            <div className="pb-1 shrink-0">
               <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Duration</span>
               <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{durationLabel}</span>
             </div>
@@ -441,7 +467,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
             <p className="text-xs text-slate-400 text-center pb-2">
               Tip: click any bar to edit the task · progress % lives in the 📊 Progress
-              Tracker tab · <span title="Deployed app version">v3.9</span>
+              Tracker tab · <span title="Deployed app version">v4.0</span>
             </p>
           </>
         ) : (
@@ -464,15 +490,48 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               >
                 ⬇ PDF
               </button>
-              <span className="text-xs text-slate-400">
-                {tasks.length} task{tasks.length === 1 ? '' : 's'} being tracked
-              </span>
+              <span className="flex-1 min-w-4"></span>
+
+              {/* Bi-weekly meeting — off by default; only exports when on */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={meetingEnabled}
+                onClick={() => updateMeetingEnabled(!meetingEnabled)}
+                title="Show a bi-weekly meeting marker on the tracker snapshot"
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold border transition ${
+                  meetingEnabled
+                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                    : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`inline-block w-7 h-4 rounded-full relative transition ${meetingEnabled ? 'bg-indigo-400' : 'bg-slate-300 dark:bg-slate-600'}`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all ${meetingEnabled ? 'left-3.5' : 'left-0.5'}`}
+                  ></span>
+                </span>
+                Bi-weekly meeting
+              </button>
+              {meetingEnabled && (
+                <input
+                  type="text"
+                  value={meetingLabel}
+                  maxLength={40}
+                  onChange={(e) => updateMeetingLabel(e.target.value)}
+                  placeholder='e.g. "3/7" or "Week 3"'
+                  aria-label="Bi-weekly meeting value"
+                  className="w-36 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              )}
             </div>
 
             <TrackerTable
               tasks={tasks}
               title={title}
               headerLabel={trackerLabel}
+              unitLabel={unitLabel}
               onHeaderLabelChange={setTrackerLabel}
               onPatchTask={handlePatchTask}
               onDeleteTask={handleDelete}

@@ -21,6 +21,8 @@ function normalizeSettings(s) {
     projectTitle: typeof s.projectTitle === 'string' ? s.projectTitle : '',
     projectStart: asISOOrNull(s.projectStart),
     projectEnd: asISOOrNull(s.projectEnd),
+    meetingEnabled: s.meetingEnabled === true,
+    meetingLabel: typeof s.meetingLabel === 'string' ? s.meetingLabel : '',
   };
 }
 
@@ -37,7 +39,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/login');
 
   let tasks = [];
-  let settings = { projectTitle: '', projectStart: null, projectEnd: null };
+  let settings = { projectTitle: '', projectStart: null, projectEnd: null, meetingEnabled: false, meetingLabel: '' };
   let loadError = '';
   try {
     [tasks, settings] = await Promise.all([listTasks(user.id), getSettings(user.id)]);

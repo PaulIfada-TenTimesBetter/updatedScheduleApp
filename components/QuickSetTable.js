@@ -19,7 +19,7 @@ const inputBase =
  * Inputs themselves are uncontrolled (defaultValue) and only SAVE on
  * blur/Enter — so live math can never cause the snap-back bug.
  */
-export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit }) {
+export default function QuickSetTable({ tasks, title, unitLabel = 'S/N', liveVal, onType, onCommit }) {
   const displayHeader = title || 'Task';
 
   const clampFor = {
@@ -44,7 +44,7 @@ export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit 
         <table className="w-full text-sm" style={{ minWidth: 780 }}>
           <thead>
             <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
-              <th className="px-3 py-2.5 w-14">S/N</th>
+              <th className="px-3 py-2.5 w-14">{unitLabel}</th>
               <th className="px-3 py-2.5">{displayHeader}</th>
               <th className="px-3 py-2.5 w-32 text-center">Importance</th>
               <th className="px-3 py-2.5 w-32">Progress (%)</th>
@@ -76,7 +76,10 @@ export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit 
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                     }}
-                    onBlur={(e) => onCommit(t.id, 'weight', e.target.value)}
+                    onBlur={(e) => {
+                      onCommit(t.id, 'weight', e.target.value);
+                      e.currentTarget.value = String(clampWeight(e.target.value));
+                    }}
                     title="Importance of this task to the project — whole numbers 1 to 10: 1 = minor, 5 = major, 10 = most critical"
                     className={`${inputBase} w-16 text-center`}
                     aria-label={`Importance weight for ${t.name}`}
@@ -93,7 +96,10 @@ export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit 
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                     }}
-                    onBlur={(e) => onCommit(t.id, 'progress', e.target.value)}
+                    onBlur={(e) => {
+                      onCommit(t.id, 'progress', e.target.value);
+                      e.currentTarget.value = String(clampProgress(e.target.value));
+                    }}
                     className={`${inputBase} w-20 text-center`}
                     aria-label={`Progress percentage for ${t.name}`}
                   />

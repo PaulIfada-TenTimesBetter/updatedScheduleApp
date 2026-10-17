@@ -34,6 +34,10 @@ backed by **Neon Postgres**.
 - 🏷️ **Task names on the bars** — the schedule prints each task's name on its bar.
 - 🔢 **S/N numbering** and an **editable tracker heading** — click the column header in the
   Progress Tracker to rename it; exports use the same heading.
+- 🗓️ **Bi-weekly meeting marker** — toggle it on in the tracker toolbar and fill in your
+  value (e.g. "3/7"); it prints on the PNG/PDF snapshot (with the date). Off = never shown.
+- 📱 **Mobile-friendly** — the whole app (scheduler, tracker, exports) is usable on a phone:
+  tabs go full-width, cards stack, and tables/chart swipe horizontally with sticky headers.
 - 📊 Stats: total tasks, critical count, weighted overall progress.
 
 ## Project structure

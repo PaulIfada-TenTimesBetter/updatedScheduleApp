@@ -18,6 +18,8 @@ export async function PUT(req) {
   const projectTitle = String(body.projectTitle ?? '').trim().slice(0, 140);
   const projectStart = body.projectStart ? String(body.projectStart) : null;
   const projectEnd = body.projectEnd ? String(body.projectEnd) : null;
+  const meetingEnabled = body.meetingEnabled === true;
+  const meetingLabel = String(body.meetingLabel ?? '').trim().slice(0, 40);
 
   if (projectStart && !isValidISODate(projectStart)) {
     return NextResponse.json({ error: 'Invalid project start date.' }, { status: 400 });
@@ -33,7 +35,9 @@ export async function PUT(req) {
   }
 
   try {
-    const settings = await upsertSettings(user.id, { projectTitle, projectStart, projectEnd });
+    const settings = await upsertSettings(user.id, {
+      projectTitle, projectStart, projectEnd, meetingEnabled, meetingLabel,
+    });
     return NextResponse.json({ settings });
   } catch (err) {
     console.error('[settings]', err);
