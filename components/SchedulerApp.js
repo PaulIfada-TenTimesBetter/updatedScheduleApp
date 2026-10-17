@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import GanttChart from './GanttChart';
 import TaskModal from './TaskModal';
 import ImportModal from './ImportModal';
 import TrackerTable from './TrackerTable';
 import Legend from './Legend';
 import { downloadGanttPng } from '@/lib/exportGantt';
+import { downloadTrackerPdf } from '@/lib/exportTracker';
 
 function useLocalState(key, initial) {
   const [value, setValue] = useState(initial);
@@ -25,11 +26,11 @@ function useLocalState(key, initial) {
   return [value, update];
 }
 
-export default function SchedulerApp({ user, initialTasks, demoMode, loadError }) {
+export default function SchedulerApp({ user, initialTasks, initialSettings, demoMode, loadError }) {
   const [tasks, setTasks] = useState(initialTasks || []);
   const [zoom, setZoom] = useState('day');
   const [tab, setTab] = useState('scheduler'); // 'scheduler' | 'tracker'
-  const [modal, setModal] = useState(null); // null | { task: null } | { task }
+  const [modal, setModal] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [modalError, setModalError] = useState('');
   const [importError, setImportError] = useState('');
@@ -38,26 +39,53 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
   const [notice, setNotice] = useState('');
 
   const [theme, setTheme] = useLocalState('tt-theme', 'light');
-  const [chartTitle, setChartTitle] = useLocalState('tt-chart-title', 'Project Schedule');
   const [sidebarLabel, setSidebarLabel] = useLocalState('tt-sidebar-label', 'Task');
-  const [showProgress, setShowProgress] = useLocalState('tt-show-progress', '1');
+
+  // Project settings — persisted to the database per user.
+  const [chartTitle, setChartTitle] = useState(initialSettings?.projectTitle || '');
+  const [projectStart, setProjectStart] = useState(initialSettings?.projectStart || '');
+  const [projectEnd, setProjectEnd] = useState(initialSettings?.projectEnd || '');
+  const settingsTimer = useRef(null);
 
   const displayName = user.name || user.email;
   const criticalCount = tasks.filter((t) => t.priority === 'critical').length;
-  const totalWeight = tasks.reduce((s, t) => s + Math.max(1, Math.min(100, t.weight || 1)), 0);
-  const weightedProgress = totalWeight
-    ? Math.round(
-        tasks.reduce(
-          (s, t) => s + (t.progress || 0) * Math.max(1, Math.min(100, t.weight || 1)),
-          0
-        ) / totalWeight
-      )
-    : 0;
-  const showProgressBool = showProgress === '1';
+  const title = chartTitle.trim() || 'Project Schedule';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
+
+  // Debounced save of project settings (title + duration).
+  function queueSettingsSave(next) {
+    clearTimeout(settingsTimer.current);
+    settingsTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectTitle: next.chartTitle ?? chartTitle,
+            projectStart: next.projectStart ?? projectStart,
+            projectEnd: next.projectEnd ?? projectEnd,
+          }),
+        });
+        if (res.status === 401) window.location.href = '/login';
+      } catch {}
+    }, 700);
+  }
+
+  function updateChartTitle(v) {
+    setChartTitle(v);
+    queueSettingsSave({ chartTitle: v });
+  }
+  function updateProjectStart(v) {
+    setProjectStart(v);
+    queueSettingsSave({ projectStart: v });
+  }
+  function updateProjectEnd(v) {
+    setProjectEnd(v);
+    queueSettingsSave({ projectEnd: v });
+  }
 
   async function handleSave(data, taskId) {
     setBusy(true);
@@ -129,7 +157,7 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
         setTasks((prev) => prev.map((t) => (t.id === taskId ? payload.task : t)));
       }
     } catch {
-      /* keep the local value; user can retry by editing again */
+      /* keep the local value; the user can retry by editing again */
     }
   }
 
@@ -175,14 +203,28 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
     downloadGanttPng({
       tasks,
       zoom,
-      title: chartTitle || 'Project Schedule',
+      title,
       sidebarLabel,
-      showProgress: showProgressBool,
+      projectStart: projectStart || undefined,
+      projectEnd: projectEnd || undefined,
     });
+  }
+
+  function handleTrackerPdf() {
+    downloadTrackerPdf({ tasks, title });
   }
 
   const inputCls =
     'rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+
+  const durationLabel = (() => {
+    if (!projectStart || !projectEnd) return '—';
+    const days = Math.round(
+      (new Date(projectEnd).getTime() - new Date(projectStart).getTime()) / 86400000
+    ) + 1;
+    const weeks = Math.max(1, Math.round(days / 7));
+    return `${days} day${days === 1 ? '' : 's'} (~${weeks} wk)`;
+  })();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -246,6 +288,11 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
             ✅ {notice}
           </div>
         )}
+        {loadError && (
+          <div className="rounded-xl border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-300 text-sm px-4 py-3">
+            <strong className="font-semibold">Database error.</strong> {loadError}
+          </div>
+        )}
         {demoMode && (
           <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200 text-sm px-4 py-3">
             <strong className="font-semibold">Demo mode.</strong> No database is connected, so
@@ -255,50 +302,57 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
           </div>
         )}
 
-        {/* Chart title + label editor */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <input
-            type="text"
-            value={chartTitle}
-            maxLength={140}
-            onChange={(e) => setChartTitle(e.target.value)}
-            placeholder="Chart title — e.g. NIGER STATE GAS MASTER PLAN"
-            className="flex-1 text-xl sm:text-2xl font-black bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-indigo-500 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600"
-            aria-label="Chart title"
-          />
-          <div className="flex items-center gap-2 shrink-0">
-            <label
-              htmlFor="sidebar-label"
-              className="text-xs font-bold uppercase tracking-wider text-slate-400"
-            >
-              Row label
+        {/* Project title + duration (saved to your account) */}
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3.5 flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="flex-1">
+            <label htmlFor="project-title" className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Project title
             </label>
             <input
-              id="sidebar-label"
+              id="project-title"
               type="text"
-              value={sidebarLabel}
-              maxLength={30}
-              onChange={(e) => setSidebarLabel(e.target.value)}
-              placeholder="Task"
-              className={`${inputCls} w-32`}
+              value={chartTitle}
+              maxLength={140}
+              onChange={(e) => updateChartTitle(e.target.value)}
+              placeholder="Type the project title — e.g. NIGER STATE GAS MASTER PLAN"
+              className="mt-0.5 w-full text-xl sm:text-2xl font-black bg-transparent border border-transparent hover:border-slate-300 dark:hover:border-slate-600 focus:border-indigo-500 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600"
             />
+          </div>
+          <div className="flex items-end gap-3 shrink-0">
+            <div>
+              <label htmlFor="project-start" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Project start
+              </label>
+              <input
+                id="project-start"
+                type="date"
+                value={projectStart}
+                onChange={(e) => updateProjectStart(e.target.value)}
+                className={`${inputCls} mt-0.5`}
+              />
+            </div>
+            <div>
+              <label htmlFor="project-end" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Project end
+              </label>
+              <input
+                id="project-end"
+                type="date"
+                value={projectEnd}
+                onChange={(e) => updateProjectEnd(e.target.value)}
+                className={`${inputCls} mt-0.5`}
+              />
+            </div>
+            <div className="pb-1">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Duration</span>
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{durationLabel}</span>
+            </div>
           </div>
         </div>
 
         {tab === 'scheduler' ? (
           <>
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard label="Total tasks" value={tasks.length} />
-              <StatCard
-                label="Critical tasks"
-                value={criticalCount}
-                valueClass={criticalCount > 0 ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}
-              />
-              <StatCard label="Overall progress" value={`${weightedProgress}%`} />
-            </div>
-
-            {/* Toolbar */}
+            {/* Scheduler toolbar */}
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => {
@@ -338,17 +392,6 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
                 ))}
               </div>
               <button
-                onClick={() => setShowProgress(showProgressBool ? '0' : '1')}
-                title="Switch between progress-filled bars and solid bars"
-                className={`rounded-lg border font-semibold text-xs px-3.5 py-2.5 ${
-                  showProgressBool
-                    ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
-                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
-                }`}
-              >
-                {showProgressBool ? '📊 Progress shown' : '🟦 Solid bars'}
-              </button>
-              <button
                 onClick={handleSnapshot}
                 disabled={!tasks.length}
                 title="Download the chart as a PNG image"
@@ -356,8 +399,25 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
               >
                 ⬇ Snapshot (PNG)
               </button>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="sidebar-label"
+                  className="text-[11px] font-bold uppercase tracking-wider text-slate-400"
+                >
+                  Row label
+                </label>
+                <input
+                  id="sidebar-label"
+                  type="text"
+                  value={sidebarLabel}
+                  maxLength={30}
+                  onChange={(e) => setSidebarLabel(e.target.value)}
+                  placeholder="Task"
+                  className={`${inputCls} w-28`}
+                />
+              </div>
               <div className="ml-auto">
-                <Legend showProgress={showProgressBool} />
+                <Legend />
               </div>
             </div>
 
@@ -365,8 +425,9 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
             <GanttChart
               tasks={tasks}
               zoom={zoom}
-              showProgress={showProgressBool}
               sidebarLabel={sidebarLabel}
+              projectStart={projectStart || undefined}
+              projectEnd={projectEnd || undefined}
               onEditTask={(task) => {
                 setModalError('');
                 setModal({ task });
@@ -374,24 +435,42 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
             />
 
             <p className="text-xs text-slate-400 text-center pb-2">
-              Tip: click any bar to edit the task · import a whole spreadsheet with ⬆ Import
-              Excel · everything also appears in the Progress Tracker.
+              Tip: click any bar to edit the task · progress % lives in the 📊 Progress
+              Tracker tab.
             </p>
           </>
         ) : (
-          <TrackerTable
-            tasks={tasks}
-            title={chartTitle}
-            loadError={loadError}
-            onPatchTask={handlePatchTask}
-            onDeleteTask={handleDelete}
-          />
+          <>
+            {/* Tracker toolbar */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={handleTrackerPdf}
+                disabled={!tasks.length}
+                title="Download the progress tracker as a PDF"
+                className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs px-4 py-2.5"
+              >
+                ⬇ Snapshot (PDF)
+              </button>
+              <span className="text-xs text-slate-400">
+                {tasks.length} task{tasks.length === 1 ? '' : 's'} being tracked
+              </span>
+            </div>
+
+            <TrackerTable
+              tasks={tasks}
+              title={title}
+              onPatchTask={handlePatchTask}
+              onDeleteTask={handleDelete}
+            />
+          </>
         )}
       </main>
 
       {modal && (
         <TaskModal
           task={modal.task}
+          defaultStart={projectStart || undefined}
+          defaultEnd={projectEnd || undefined}
           busy={busy}
           error={modalError}
           onSave={handleSave}
@@ -414,15 +493,6 @@ export default function SchedulerApp({ user, initialTasks, demoMode, loadError }
           }}
         />
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, valueClass = 'text-slate-800 dark:text-slate-100' }) {
-  return (
-    <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-3.5">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className={`mt-0.5 text-2xl font-bold ${valueClass}`}>{value}</p>
     </div>
   );
 }

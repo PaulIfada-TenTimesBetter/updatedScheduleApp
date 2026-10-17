@@ -24,21 +24,31 @@ const PRIORITY_OPTIONS = [
   },
 ];
 
-export default function TaskModal({ task, busy, error, onSave, onDelete, onClose }) {
+export default function TaskModal({
+  task,
+  defaultStart,
+  defaultEnd,
+  busy,
+  error,
+  onSave,
+  onDelete,
+  onClose,
+}) {
   const editing = Boolean(task);
   const [name, setName] = useState(task?.name || '');
-  const [startDate, setStartDate] = useState(task?.startDate || todayISO());
+  const [startDate, setStartDate] = useState(
+    task?.startDate || defaultStart || todayISO()
+  );
   const [endDate, setEndDate] = useState(
-    task?.endDate || toISO(addDays(parseDate(todayISO()), 3))
+    task?.endDate ||
+      defaultEnd ||
+      toISO(addDays(parseDate(defaultStart || todayISO()), 3))
   );
   const [priority, setPriority] = useState(task?.priority || 'normal');
-  const [progress, setProgress] = useState(task?.progress ?? 0);
-  const [weight, setWeight] = useState(task?.weight ?? 1);
   const [localError, setLocalError] = useState('');
 
   const shownError = localError || error;
   const preview = priority === 'critical' ? '#ef4444' : '#3b82f6';
-  const previewFill = priority === 'critical' ? '#991b1b' : '#1e40af';
 
   function onSubmit(e) {
     e.preventDefault();
@@ -51,12 +61,14 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
       setLocalError('End date cannot be before the start date.');
       return;
     }
-    const w = Math.max(1, Math.min(100, Math.round(Number(weight) || 1)));
-    onSave({ name: name.trim(), startDate, endDate, priority, progress, weight: w }, task?.id);
+    onSave({ name: name.trim(), startDate, endDate, priority }, task?.id);
   }
 
   const inputCls =
     'w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500';
+
+  const outside =
+    defaultStart && defaultEnd && (startDate < defaultStart || endDate > defaultEnd);
 
   return (
     <div
@@ -133,6 +145,13 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
             </div>
           </div>
 
+          {defaultStart && defaultEnd && (
+            <p className={`text-xs ${outside ? 'text-amber-600' : 'text-slate-400'}`}>
+              Project duration: {defaultStart} → {defaultEnd}
+              {outside && ' — this task falls outside the project duration.'}
+            </p>
+          )}
+
           {/* Priority selector */}
           <div>
             <span className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Priority</span>
@@ -169,60 +188,21 @@ export default function TaskModal({ task, busy, error, onSave, onDelete, onClose
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {/* Progress */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="task-progress" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  Progress
-                </label>
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{progress}%</span>
-              </div>
-              <input
-                id="task-progress"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={progress}
-                onChange={(e) => setProgress(Number(e.target.value))}
-                className="w-full accent-indigo-600"
-              />
-            </div>
-            {/* Weight */}
-            <div>
-              <label htmlFor="task-weight" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                Weight
-              </label>
-              <input
-                id="task-weight"
-                type="number"
-                min="1"
-                max="100"
-                step="1"
-                required
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className={`${inputCls} py-2`}
-              />
-              <p className="mt-1 text-[11px] text-slate-400">
-                Higher = counts more in the overall progress.
-              </p>
-            </div>
-          </div>
-
-          {/* Live bar preview */}
+          {/* Solid color preview */}
           <div>
             <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Preview
+              Bar color preview
             </span>
-            <div className="h-[22px] rounded-md overflow-hidden ring-1 ring-black/10" style={{ backgroundColor: preview }}>
-              <div
-                className="h-full transition-all"
-                style={{ width: `${progress}%`, backgroundColor: previewFill }}
-              />
-            </div>
+            <div
+              className="h-[22px] rounded-md ring-1 ring-black/10"
+              style={{ backgroundColor: preview }}
+            />
           </div>
+
+          <p className="text-xs text-slate-400">
+            Progress % and weight are managed in the{' '}
+            <span className="font-semibold">📊 Progress Tracker</span> tab.
+          </p>
 
           <div className="flex items-center gap-2 pt-1">
             {editing && (

@@ -11,26 +11,26 @@ backed by **Neon Postgres**.
 - 👤 **Private schedules** — every user sees and manages only their own tasks.
 - 🚩 **Priority per task** — Critical (red) or Normal (blue), chosen when creating/editing.
 - 🗺️ **Legend** — red = critical task, blue = normal task, darker fill = completed progress.
-- 📈 **Zoomable Gantt timeline** — Day / Week / Month views, weekend shading, progress on
-  each bar, click a bar to edit.
-- 📊 **Two sections** — a **📅 Scheduler** tab (the Gantt timeline) and a **📊 Progress
-  Tracker** tab (no dates — just each activity's progress bar, editable **weights**, and a
-  **Progress Status** comments column). Weights drive a weighted **Overall Project
-  Performance** percentage, like a bi-weekly performance sheet.
-- 📸 **Snapshot export** — downloads the chart (title, dates, bars, legend) as a
-  high-resolution PNG.
-- 🌗 **Dark / light mode** — toggle in the header; the choice is remembered per device.
-- 📝 **Custom chart title & row label** — click the big title (e.g. "NIGER STATE GAS MASTER
-  PLAN") or the row-label box (default "Task") to change what the chart says. Both appear
-  in the PNG snapshot too.
-- 📊 **Progress toggle** — show progress-filled bars with % inside, or switch to **solid
-  bars** to ignore progress entirely.
+- 📈 **Zoomable Gantt timeline (pure schedule)** — Day / Week / Month views with **clean,
+  solid colored bars** (red = critical, blue = normal). No progress, no % — the schedule
+  stays purely about dates.
+- 📊 **Two sections** — a **📅 Scheduler** tab (the timeline) and a **📊 Progress Tracker**
+  tab where all progress lives: progress bars with the **% inside**, an editable **weight**
+  per task, a **quick-set table** for typing weights and progress percentages directly, and
+  a **Progress Status** comments column. Weights drive the weighted **Overall Project
+  Performance** percentage.
+- 🏗️ **Project title & duration** — type the project title and pick the overall start/end
+  dates with the calendar pickers; both are saved to your account and feed the timeline,
+  task defaults, and every snapshot.
+- 📸 **Snapshots** — the Scheduler downloads as a **PNG**, the Progress Tracker as a
+  **PDF** — both using the same project title.
+- 🌗 **Dark / light mode** — toggle in the header; remembered per device.
+- 📝 **Custom row label** — change the "Task" column heading to anything (e.g. "Activity").
 - 📥 **Excel import** — upload an .xlsx/.xls/.csv, pick the sheet and the **column that
   holds the task names** (date and progress columns optional — auto-detected where
   possible, including files with title rows above the table). Import up to 500 tasks at
   once.
-- ⚖️ **Task weight** — set per task (1–100); re-ranks how much each task counts toward
-  overall progress.
+- ⚖️ **Task weight (1–100)** — re-ranks how much each task counts toward overall progress.
 - 📊 Stats: total tasks, critical count, weighted overall progress.
 
 ## Project structure

@@ -13,19 +13,25 @@ const ZOOMS = {
   month: 3.5,
 };
 
-export default function GanttChart({ tasks, zoom, showProgress = true, sidebarLabel = 'Task', onEditTask }) {
+export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', projectStart, projectEnd, onEditTask }) {
   const dayWidth = ZOOMS[zoom] || ZOOMS.day;
   const scrollRef = useRef(null);
 
   const { days } = useMemo(() => {
     let min = null;
     let max = null;
+    const consider = (iso) => {
+      if (!iso) return;
+      const d = parseDate(iso);
+      if (!min || d < min) min = d;
+      if (!max || d > max) max = d;
+    };
     for (const t of tasks) {
-      const s = parseDate(t.startDate);
-      const e = parseDate(t.endDate);
-      if (!min || s < min) min = s;
-      if (!max || e > max) max = e;
+      consider(t.startDate);
+      consider(t.endDate);
     }
+    consider(projectStart);
+    consider(projectEnd);
     if (!min) {
       min = parseDate(todayISO());
       max = addDays(min, 14);
@@ -35,9 +41,8 @@ export default function GanttChart({ tasks, zoom, showProgress = true, sidebarLa
     if (diffDays(start, end) < 20) end = addDays(start, 20);
 
     const total = diffDays(start, end) + 1;
-    const arr = Array.from({ length: total }, (_, i) => addDays(start, i));
-    return { days: arr };
-  }, [tasks]);
+    return { days: Array.from({ length: total }, (_, i) => addDays(start, i)) };
+  }, [tasks, projectStart, projectEnd]);
 
   const months = useMemo(() => {
     const list = [];
@@ -189,7 +194,6 @@ export default function GanttChart({ tasks, zoom, showProgress = true, sidebarLa
                 const e = parseDate(task.endDate);
                 const left = diffDays(days[0], s) * dayWidth + 2;
                 const width = Math.max(8, (diffDays(s, e) + 1) * dayWidth - 4);
-                const prog = Math.max(0, Math.min(100, task.progress || 0));
                 return (
                   <div key={task.id} className="relative flex group" style={{ height: ROW_H }}>
                     {/* Sidebar cell */}
@@ -216,7 +220,7 @@ export default function GanttChart({ tasks, zoom, showProgress = true, sidebarLa
                         {p.label}
                       </span>
                     </div>
-                    {/* Timeline cell */}
+                    {/* Timeline cell — clean solid color bar (no progress) */}
                     <div
                       className="relative shrink-0 group-hover:bg-slate-50/60 dark:group-hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800"
                       style={{ width: timelineW }}
@@ -224,24 +228,11 @@ export default function GanttChart({ tasks, zoom, showProgress = true, sidebarLa
                       <button
                         type="button"
                         onClick={() => onEditTask(task)}
-                        title={`${task.name} · ${p.label} · ${task.startDate} → ${task.endDate}${showProgress ? ` · ${prog}% complete` : ''} — click to edit`}
+                        title={`${task.name} · ${p.label} · ${task.startDate} → ${task.endDate} — click to edit`}
                         className="absolute top-1/2 -translate-y-1/2 h-[22px] rounded-md overflow-hidden shadow-sm ring-1 ring-black/10 hover:ring-2 hover:ring-slate-400 dark:hover:ring-slate-500 transition-all z-10 text-left"
-                        style={{ left, width }}
-                      >
-                        {showProgress ? (
-                          <>
-                            <span
-                              className="absolute inset-y-0 left-0"
-                              style={{ width: `${prog}%`, backgroundColor: p.fill }}
-                            />
-                            <span className="relative z-10 flex items-center justify-center h-full px-1.5 text-[10px] font-bold text-white whitespace-nowrap drop-shadow-sm">
-                              {width >= 46 ? `${prog}%` : ''}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="absolute inset-0" style={{ backgroundColor: p.bar }} />
-                        )}
-                      </button>
+                        style={{ left, width, backgroundColor: p.bar }}
+                        aria-label={`Edit ${task.name}`}
+                      />
                     </div>
                   </div>
                 );
