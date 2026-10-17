@@ -1,18 +1,16 @@
 'use client';
 
-import { PRIORITY } from '@/lib/priority';
+import {
+  clampWeight,
+  clampProgress,
+  getTotalImportance,
+  getContribution,
+} from '@/lib/weightedProgress';
 
 const inputBase =
   'rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
 
-function clampWeight(v) {
-  return Math.max(1, Math.min(100, Math.round(Number(v) || 1)));
-}
-function clampProgress(v) {
-  const n = Math.round(Number(v));
-  if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(100, n));
-}
+
 
 /**
  * Quick-set editor: S/N, task, Importance, Progress (%), and a LIVE
@@ -29,16 +27,12 @@ export default function QuickSetTable({ tasks, title, liveVal, onType, onCommit 
     progress: clampProgress,
   };
 
-  const totalWeight = tasks.reduce(
-    (s, t) => s + clampWeight(Number(liveVal(t, 'weight'))),
-    0
-  );
+  // ⭐ Same shared denominator as the Overall card — tasks arrive from the
+  // tracker with live-typed values already resolved and clamped.
+  const totalImportance = getTotalImportance(tasks);
 
   function contribution(t) {
-    const w = clampWeight(Number(liveVal(t, 'weight')));
-    const p = clampProgress(Number(liveVal(t, 'progress')));
-    if (!totalWeight) return 0;
-    return (p * w) / totalWeight;
+    return getContribution(t, totalImportance);
   }
 
   return (

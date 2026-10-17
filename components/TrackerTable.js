@@ -2,19 +2,20 @@
 
 import { useMemo, useState } from 'react';
 import { PRIORITY } from '@/lib/priority';
+import {
+  clampWeight,
+  clampProgress,
+  getTotalImportance,
+  getContribution,
+  getOverallPerformance,
+  formatPercent,
+} from '@/lib/weightedProgress';
 import QuickSetTable from './QuickSetTable';
 
 const bareInput =
   'w-full rounded border border-transparent hover:border-slate-300 dark:hover:border-slate-600 bg-transparent hover:bg-white dark:hover:bg-slate-800 px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600';
 
-function clampWeight(v) {
-  return Math.max(1, Math.min(100, Math.round(Number(v) || 1)));
-}
-function clampProgress(v) {
-  const n = Math.round(Number(v));
-  if (Number.isNaN(n)) return 0;
-  return Math.max(0, Math.min(100, n));
-}
+
 
 /**
  * Progress Tracker — overall performance, progress bars and the importance/
@@ -81,12 +82,19 @@ export default function TrackerTable({
     [tasks, live]
   );
 
-  const totalWeight = viewTasks.reduce((s, t) => s + t.weight, 0);
-  const weighted = totalWeight
-    ? Math.round(
-        viewTasks.reduce((s, t) => s + (t.progress || 0) * t.weight, 0) / totalWeight
-      )
-    : 0;
+  // ⭐ All figures come from the ONE shared math module (lib/weightedProgress.js).
+  const totalImportance = getTotalImportance(viewTasks);
+  const weighted = getOverallPerformance(viewTasks); // exact — contributions sum to this
+  if (process.env.NODE_ENV !== 'production') {
+    const sumOfContributions = viewTasks.reduce(
+      (s, t) => s + getContribution(t, totalImportance),
+      0
+    );
+    console.assert(
+      Math.abs(sumOfContributions - weighted) < 0.01,
+      'TT math mismatch: contributions do not sum to overall!'
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -106,7 +114,7 @@ export default function TrackerTable({
                     : 'text-red-500'
               }
             >
-              {weighted}%
+              {formatPercent(weighted)}%
             </span>
             <span className="ml-2 text-[11px] font-semibold text-slate-400">
               (live — saves when you click away)
