@@ -1,4 +1,4 @@
-# TenTimesBetter-Scheduler
+# TenTimesetter-Scheduler
 
 A Gantt-style project scheduler with **user accounts (email + password)**, **critical vs
 normal task priorities**, and a **legend** — built with Next.js, deployed on **Netlify**,
@@ -38,6 +38,8 @@ backed by **Neon Postgres**.
   value (e.g. "3/7"); it prints on the PNG/PDF snapshot (with the date). Off = never shown.
 - 📱 **Mobile-friendly** — the whole app (scheduler, tracker, exports) is usable on a phone:
   tabs go full-width, cards stack, and tables/chart swipe horizontally with sticky headers.
+- 📲 **Installable app (PWA)** — staff can install it on phones and PCs and open it like a
+  native app (icon + full screen, no browser bars). Data is still safely in the cloud.
 - 📊 Stats: total tasks, critical count, weighted overall progress.
 
 ## Project structure

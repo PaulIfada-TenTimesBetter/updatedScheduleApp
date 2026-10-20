@@ -1,4 +1,4 @@
--- TenTimesBetter-Scheduler — Neon Postgres schema.
+-- TenTimesetter-Scheduler — Neon Postgres schema.
 -- NOTE: the app runs this automatically on first request, so you normally do
 -- NOT need to paste this anywhere. It is here for reference / manual setup.
 

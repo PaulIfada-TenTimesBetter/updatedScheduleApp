@@ -267,7 +267,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               10×
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold leading-tight truncate">TenTimesBetter-Scheduler</h1>
+              <h1 className="font-bold leading-tight truncate">TenTimesetter-Scheduler</h1>
               <p className="text-[11px] text-slate-400 leading-tight hidden sm:block">
                 Schedule &amp; track — built for real projects
               </p>
@@ -467,7 +467,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
             <p className="text-xs text-slate-400 text-center pb-2">
               Tip: click any bar to edit the task · progress % lives in the 📊 Progress
-              Tracker tab · <span title="Deployed app version">v4.0</span>
+              Tracker tab · <span title="Deployed app version">v4.1</span>
             </p>
           </>
         ) : (
