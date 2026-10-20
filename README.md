@@ -1,4 +1,4 @@
-# TenTimesetter-Scheduler
+# TenTimesBetter-Scheduler
 
 A Gantt-style project scheduler with **user accounts (email + password)**, **critical vs
 normal task priorities**, and a **legend** — built with Next.js, deployed on **Netlify**,

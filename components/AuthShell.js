@@ -8,7 +8,7 @@ export default function AuthShell({ title, subtitle, demoMode, children }) {
           10×
         </div>
         <span className="font-bold text-white text-lg group-hover:text-indigo-200">
-          TenTimesetter-Scheduler
+          TenTimesBetter-Scheduler
         </span>
       </Link>
 
@@ -28,7 +28,7 @@ export default function AuthShell({ title, subtitle, demoMode, children }) {
       </div>
 
       <p className="mt-8 text-xs text-slate-400">
-        Protected by email + password sign-in · TenTimesetter-Scheduler
+        Protected by email + password sign-in · TenTimesBetter-Scheduler
       </p>
     </main>
   );
