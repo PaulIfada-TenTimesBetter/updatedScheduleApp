@@ -2,7 +2,7 @@ import './globals.css';
 import RegisterSW from './register-sw';
 
 export const metadata = {
-  title: 'TenTimesBetter-Scheduler',
+  title: 'TenTimesetter-Scheduler',
   description:
     'Plan projects on a visual Gantt timeline and track progress — secure accounts, critical vs normal priorities, weighted progress tracking, and Excel import.',
   manifest: '/manifest.webmanifest',

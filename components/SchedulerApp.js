@@ -40,6 +40,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
   const [theme, setTheme] = useLocalState('tt-theme', 'light');
   const [sidebarLabel, setSidebarLabel] = useLocalState('tt-sidebar-label', 'Task');
+  const [weekNumbers, setWeekNumbers] = useLocalState('tt-week-numbers', false);
   const [trackerLabel, setTrackerLabel] = useLocalState('tt-tracker-label', '');
 
   // Project settings — persisted to the database per user.
@@ -222,6 +223,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
       sidebarLabel,
       projectStart: projectStart || undefined,
       projectEnd: projectEnd || undefined,
+      weekNumbers,
     });
   }
 
@@ -267,7 +269,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               10×
             </div>
             <div className="min-w-0">
-              <h1 className="font-bold leading-tight truncate">TenTimesBetter-Scheduler</h1>
+              <h1 className="font-bold leading-tight truncate">TenTimesetter-Scheduler</h1>
               <p className="text-[11px] text-slate-400 leading-tight hidden sm:block">
                 Schedule &amp; track — built for real projects
               </p>
@@ -423,6 +425,17 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
                 ))}
               </div>
               <button
+                onClick={() => setWeekNumbers(!weekNumbers)}
+                title={`In Week zoom, number the columns "Week 1, Week 2…" from the project start instead of dates like "Nov 2". Currently ${weekNumbers ? 'ON' : 'OFF'}.`}
+                className={`rounded-lg border px-3.5 py-2 text-xs font-semibold ${
+                  weekNumbers
+                    ? 'bg-slate-900 dark:bg-indigo-600 text-white border-slate-900 dark:border-indigo-600'
+                    : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                Week #
+              </button>
+              <button
                 onClick={handleSnapshot}
                 disabled={!tasks.length}
                 title="Download the chart as a PNG image"
@@ -457,6 +470,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               tasks={tasks}
               zoom={zoom}
               sidebarLabel={sidebarLabel}
+              weekNumbers={weekNumbers}
               projectStart={projectStart || undefined}
               projectEnd={projectEnd || undefined}
               onEditTask={(task) => {
@@ -467,7 +481,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
             <p className="text-xs text-slate-400 text-center pb-2">
               Tip: click any bar to edit the task · progress % lives in the 📊 Progress
-              Tracker tab · <span title="Deployed app version">v4.1</span>
+              Tracker tab · <span title="Deployed app version">v4.2</span>
             </p>
           </>
         ) : (

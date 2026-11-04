@@ -8,7 +8,7 @@ export default function Offline() {
       </div>
       <h1 className="text-2xl font-black mb-2">You&apos;re offline</h1>
       <p className="text-slate-300 text-sm max-w-sm mb-6">
-        TenTimesBetter-Scheduler is installed on this device, but your project data lives
+        TenTimesetter-Scheduler is installed on this device, but your project data lives
         securely in the cloud — reconnect to pick up where you left off.
       </p>
       <button

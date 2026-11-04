@@ -1,4 +1,4 @@
-/* TenTimesBetter-Scheduler service worker — makes the app installable and
+/* TenTimesetter-Scheduler service worker — makes the app installable and
  * lets it open (with a friendly offline screen) without a connection.
  * API calls are NEVER cached — live data always comes from the server. */
 const CACHE = 'tts-v4.1';

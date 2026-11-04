@@ -7,13 +7,20 @@ import { PRIORITY } from '@/lib/priority';
 const ROW_H = 44;
 const HEADER_H = 52;
 const SIDEBAR_W = 260;
+// Rows grow to fit the COMPLETE task name (wrapped). The estimate assumes fewer
+// characters per line than CSS actually fits, so a row is never too short.
+const APP_NAME_CHARS = 19;
+function ganttRowHeight(name) {
+  const lines = Math.max(1, Math.ceil(String(name || '').length / APP_NAME_CHARS));
+  return 28 + lines * 16;
+}
 const ZOOMS = {
   day: 36,
   week: 12,
   month: 3.5,
 };
 
-export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', projectStart, projectEnd, onEditTask }) {
+export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', projectStart, projectEnd, weekNumbers = false, onEditTask }) {
   const dayWidth = ZOOMS[zoom] || ZOOMS.day;
   const scrollRef = useRef(null);
 
@@ -125,22 +132,36 @@ export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', project
                     );
                   })}
                 {dayWidth < 24 &&
-                  days.map((d, i) => {
-                    const showWeek = dayWidth >= 8 && d.getUTCDay() === 1;
-                    const showMonth = dayWidth < 8 && d.getUTCDate() === 1;
-                    if (!showWeek && !showMonth) return null;
-                    return (
-                      <div
-                        key={i}
-                        className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-slate-600 pl-1.5 flex items-center text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap"
-                        style={{ left: i * dayWidth }}
-                      >
-                        {showWeek
-                          ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
-                          : d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })}
-                      </div>
-                    );
-                  })}
+                  (() => {
+                    let mondayNo = 0;
+                    // Week 1 = the week containing the project start date
+                    const projMonday = projectStart
+                      ? (() => { const pd = parseDate(projectStart); return addDays(pd, -((pd.getUTCDay() + 6) % 7)); })()
+                      : null;
+                    return days.map((d, i) => {
+                      const showWeek = dayWidth >= 8 && d.getUTCDay() === 1;
+                      const showMonth = dayWidth < 8 && d.getUTCDate() === 1;
+                      if (!showWeek && !showMonth) return null;
+                      let tickLabel;
+                      if (showWeek) {
+                        mondayNo += 1;
+                        tickLabel = weekNumbers
+                          ? `Week ${projMonday ? Math.max(1, diffDays(projMonday, d) / 7 + 1) : mondayNo}`
+                          : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                      } else {
+                        tickLabel = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+                      }
+                      return (
+                        <div
+                          key={i}
+                          className="absolute top-0 bottom-0 border-l border-slate-300 dark:border-slate-600 pl-1.5 flex items-center text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap"
+                          style={{ left: i * dayWidth }}
+                        >
+                          {tickLabel}
+                        </div>
+                      );
+                    });
+                  })()}
               </div>
             </div>
           </div>
@@ -191,7 +212,7 @@ export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', project
                 const left = diffDays(days[0], s) * dayWidth + 2;
                 const width = Math.max(8, (diffDays(s, e) + 1) * dayWidth - 4);
                 return (
-                  <div key={task.id} className="relative flex group" style={{ height: ROW_H }}>
+                  <div key={task.id} className="relative flex group" style={{ height: ganttRowHeight(task.name) }}>
                     {/* Sidebar cell */}
                     <div
                       className="shrink-0 sticky left-0 z-20 flex items-center gap-2 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 border-r border-b border-slate-100 dark:border-slate-800 px-4"
@@ -202,8 +223,8 @@ export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', project
                         style={{ backgroundColor: p.dot }}
                         title={`${p.label} task`}
                       />
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-medium text-slate-800 dark:text-slate-100 truncate">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium leading-snug text-slate-800 dark:text-slate-100 whitespace-normal break-words">
                           {task.name}
                         </p>
                         <p className="text-[11px] text-slate-400 truncate">

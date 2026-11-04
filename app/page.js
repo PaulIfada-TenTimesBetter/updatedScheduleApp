@@ -14,7 +14,7 @@ export default async function HomePage() {
       <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Logo />
-          <span className="font-bold">TenTimesBetter-Scheduler</span>
+          <span className="font-bold">TenTimesetter-Scheduler</span>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -38,7 +38,7 @@ export default async function HomePage() {
           Account-based project scheduling
         </p>
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-          TenTimesBetter-Scheduler
+          TenTimesetter-Scheduler
         </h1>
         <p className="mt-5 text-lg text-slate-300 max-w-2xl mx-auto">
           Plan your projects on a visual Gantt timeline. Create your own account, add tasks,
@@ -83,7 +83,7 @@ export default async function HomePage() {
       </section>
 
       <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-400">
-        TenTimesBetter-Scheduler
+        TenTimesetter-Scheduler
       </footer>
     </main>
   );
