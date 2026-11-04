@@ -9,10 +9,10 @@ const HEADER_H = 52;
 const SIDEBAR_W = 260;
 // Rows grow to fit the COMPLETE task name (wrapped). The estimate assumes fewer
 // characters per line than CSS actually fits, so a row is never too short.
-const APP_NAME_CHARS = 19;
+const APP_NAME_CHARS = 24;
 function ganttRowHeight(name) {
   const lines = Math.max(1, Math.ceil(String(name || '').length / APP_NAME_CHARS));
-  return 28 + lines * 16;
+  return 24 + lines * 14;
 }
 const ZOOMS = {
   day: 36,
@@ -224,10 +224,10 @@ export default function GanttChart({ tasks, zoom, sidebarLabel = 'Task', project
                         title={`${p.label} task`}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium leading-snug text-slate-800 dark:text-slate-100 whitespace-normal break-words">
+                        <p className="text-[11.5px] font-medium leading-[14px] text-slate-800 dark:text-slate-100 whitespace-normal break-words">
                           {task.name}
                         </p>
-                        <p className="text-[11px] text-slate-400 truncate">
+                        <p className="text-[10px] leading-[13px] text-slate-400 truncate">
                           {formatDateShort(task.startDate)} – {formatDateShort(task.endDate)}
                         </p>
                       </div>
