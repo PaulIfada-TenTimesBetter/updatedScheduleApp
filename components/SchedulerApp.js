@@ -6,8 +6,8 @@ import TaskModal from './TaskModal';
 import ImportModal from './ImportModal';
 import TrackerTable from './TrackerTable';
 import Legend from './Legend';
-import { downloadGanttPng } from '@/lib/exportGantt';
-import { downloadTrackerPng, downloadTrackerPdf } from '@/lib/exportTracker';
+import { downloadGanttPng, downloadGanttPdf, downloadGanttPptx } from '@/lib/exportGantt';
+import { downloadTrackerPng, downloadTrackerPdf, downloadTrackerPptx } from '@/lib/exportTracker';
 
 function useLocalState(key, initial) {
   const [value, setValue] = useState(initial);
@@ -215,17 +215,35 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
     window.location.href = '/login';
   }
 
+  const ganttOptions = () => ({
+    tasks,
+    zoom,
+    title,
+    sidebarLabel,
+    projectStart: projectStart || undefined,
+    projectEnd: projectEnd || undefined,
+    weekNumbers,
+  });
+
+  const exportBy = (fn, label) => async () => {
+    setBusy(true);
+    try {
+      await fn(ganttOptions());
+      setNotice(`${label} downloaded ✓`);
+      setTimeout(() => setNotice(''), 4000);
+    } catch {
+      setNotice(`${label} could not be generated — please try again.`);
+      setTimeout(() => setNotice(''), 5000);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   function handleSnapshot() {
-    downloadGanttPng({
-      tasks,
-      zoom,
-      title,
-      sidebarLabel,
-      projectStart: projectStart || undefined,
-      projectEnd: projectEnd || undefined,
-      weekNumbers,
-    });
+    exportBy(downloadGanttPng, 'PNG snapshot')();
   }
+  const handleSnapshotPdf = exportBy(downloadGanttPdf, 'PDF');
+  const handleSnapshotPptx = exportBy(downloadGanttPptx, 'PowerPoint slide');
 
   function handleTrackerPng() {
     downloadTrackerPng({
@@ -235,6 +253,26 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
       unitLabel,
       meetingLabel: meetingEnabled ? meetingLabel.trim() : '',
     });
+  }
+
+  async function handleTrackerPptx() {
+    setBusy(true);
+    try {
+      await downloadTrackerPptx({
+        tasks,
+        title,
+        headerLabel: trackerLabel,
+        unitLabel,
+        meetingLabel: meetingEnabled ? meetingLabel.trim() : '',
+      });
+      setNotice('PowerPoint slide downloaded ✓');
+      setTimeout(() => setNotice(''), 4000);
+    } catch {
+      setNotice('PowerPoint could not be generated — please try again.');
+      setTimeout(() => setNotice(''), 5000);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function handleTrackerPdf() {
@@ -437,11 +475,27 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               </button>
               <button
                 onClick={handleSnapshot}
-                disabled={!tasks.length}
-                title="Download the chart as a PNG image"
+                disabled={!tasks.length || busy}
+                title="Download the chart as a sharp high-resolution PNG image"
                 className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-200 font-semibold text-xs px-3.5 py-2.5"
               >
-                ⬇ Snapshot (PNG)
+                ⬇ PNG
+              </button>
+              <button
+                onClick={handleSnapshotPdf}
+                disabled={!tasks.length || busy}
+                title="Download the chart as a one-page PDF, sized exactly to the chart"
+                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-200 font-semibold text-xs px-3.5 py-2.5"
+              >
+                ⬇ PDF
+              </button>
+              <button
+                onClick={handleSnapshotPptx}
+                disabled={!tasks.length || busy}
+                title="Download the chart as a one-slide PowerPoint — the chart is scaled to fit the slide"
+                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-200 font-semibold text-xs px-3.5 py-2.5"
+              >
+                ⬇ PowerPoint
               </button>
               <div className="flex items-center gap-2">
                 <label
@@ -481,7 +535,7 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
 
             <p className="text-xs text-slate-400 text-center pb-2">
               Tip: click any bar to edit the task · progress % lives in the 📊 Progress
-              Tracker tab · <span title="Deployed app version">v4.3</span>
+              Tracker tab · <span title="Deployed app version">v4.4</span>
             </p>
           </>
         ) : (
@@ -504,6 +558,15 @@ export default function SchedulerApp({ user, initialTasks, initialSettings, demo
               >
                 ⬇ PDF
               </button>
+              <button
+                onClick={handleTrackerPptx}
+                disabled={!tasks.length || busy}
+                title="Download the tracker as a one-slide PowerPoint — scaled to fit the slide"
+                className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 dark:text-slate-200 font-semibold text-xs px-3.5 py-2.5"
+              >
+                ⬇ PowerPoint
+              </button>
+
               <span className="flex-1 min-w-4"></span>
 
               {/* Bi-weekly meeting — off by default; only exports when on */}
